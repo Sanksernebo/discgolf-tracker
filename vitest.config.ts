@@ -3,9 +3,12 @@ import tsconfigPaths from "vite-tsconfig-paths";
 
 // Point Prisma at a dedicated test database BEFORE any module import,
 // so the singleton in src/lib/prisma.ts uses it.
-// Prisma resolves relative sqlite paths against the schema's directory
-// (prisma/), so `file:./test.db` → prisma/test.db on disk.
-process.env.DATABASE_URL = "file:./test.db";
+// Point Vitest at the isolated MySQL database created by docker-compose.
+// The default matches the discgolf_test schema in docker/mysql-init.
+// Override with TEST_DATABASE_URL if you're running MySQL somewhere else.
+process.env.DATABASE_URL =
+  process.env.TEST_DATABASE_URL ??
+  "mysql://discgolf:dev@localhost:3306/discgolf_test";
 process.env.ADMIN_PASSWORD = "test-secret";
 
 export default defineConfig({

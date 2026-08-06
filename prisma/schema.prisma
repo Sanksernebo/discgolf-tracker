@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -15,8 +15,8 @@ model Course {
   city           String?
   latitude       Float
   longitude      Float
-  descriptionEt  String?
-  descriptionEn  String?
+  descriptionEt  String?  @db.Text
+  descriptionEn  String?  @db.Text
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
@@ -24,29 +24,6 @@ model Course {
   checkIns CheckIn[]
   issues   IssueReport[]
   admins   CourseAdmin[]
-}
-
-model Admin {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  role         String   // "superuser" | "courseAdmin"
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
-
-  courses CourseAdmin[]
-}
-
-model CourseAdmin {
-  courseId String
-  adminId  String
-  createdAt DateTime @default(now())
-
-  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  admin  Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@id([courseId, adminId])
-  @@index([adminId])
 }
 
 model Hole {
@@ -79,7 +56,7 @@ model IssueReport {
   id        String   @id @default(cuid())
   courseId  String?
   category  String
-  message   String
+  message   String   @db.Text
   deviceId  String?
   status    String   @default("open")
   createdAt DateTime @default(now())
@@ -87,4 +64,27 @@ model IssueReport {
   course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  courses CourseAdmin[]
+}
+
+model CourseAdmin {
+  courseId  String
+  adminId   String
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  admin  Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, adminId])
+  @@index([adminId])
 }

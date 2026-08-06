@@ -1,0 +1,34 @@
+# Local MySQL for development and tests. Zone Media OÜ runs MySQL, so we run
+# MySQL locally too — keeps migrations dialect-consistent with production.
+#
+#   docker compose up -d          # start MySQL 8 on port 3306
+#   docker compose down           # stop it
+#   docker compose down -v        # stop it and wipe the volume (fresh DB)
+#
+# The container creates TWO databases so the Vitest suite can hammer its own
+# without touching dev data:
+#   - discgolf       (used by DATABASE_URL for `npm run dev`)
+#   - discgolf_test  (used by tests via test/setup.ts)
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: discgolf-mysql
+    restart: unless-stopped
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: dev
+      MYSQL_DATABASE: discgolf
+      MYSQL_USER: discgolf
+      MYSQL_PASSWORD: dev
+    volumes:
+      - mysql-data:/var/lib/mysql
+      - ./docker/mysql-init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-udiscgolf", "-pdev"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  mysql-data:

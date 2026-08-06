@@ -1,16 +1,14 @@
 import { beforeAll, afterAll, beforeEach } from "vitest";
 import { execSync } from "child_process";
-import { existsSync, unlinkSync } from "fs";
-import path from "path";
 import { prisma } from "@/lib/prisma";
 
-const TEST_DB_PATH = path.resolve(process.cwd(), "prisma", "test.db");
-
 beforeAll(() => {
-  // Fresh schema every test run — cheap for SQLite and avoids drift.
-  if (existsSync(TEST_DB_PATH)) unlinkSync(TEST_DB_PATH);
-  execSync("npx prisma migrate deploy", {
-    env: { ...process.env, DATABASE_URL: `file:./test.db` },
+  // Reset the test schema at the start of every run. `migrate reset --force
+  // --skip-seed` drops all tables and re-applies every migration in order,
+  // which keeps the schema aligned with the migrations directory (i.e. what
+  // will run at Zone) without depending on ambient dev data.
+  execSync("npx prisma migrate reset --force --skip-seed --skip-generate", {
+    env: { ...process.env },
     stdio: "inherit",
   });
 });

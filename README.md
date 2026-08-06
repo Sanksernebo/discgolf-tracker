@@ -115,7 +115,7 @@ Native language is Estonian; English is a first-class second locale.
 | Framework      | Next.js 16 (App Router, Turbopack), React 19              |
 | Language       | TypeScript (strict)                                       |
 | Styling        | Tailwind CSS v4 (CSS-first config)                        |
-| DB / ORM       | SQLite via Prisma 6                                       |
+| DB / ORM       | MySQL 8 via Prisma 6 (docker-compose for local dev)       |
 | Validation     | Zod                                                       |
 | i18n           | `next-intl`                                               |
 | Maps           | `react-leaflet` + OpenStreetMap tiles                     |
@@ -132,6 +132,9 @@ Native language is Estonian; English is a first-class second locale.
 
 - Node.js 20+ (tested on 22)
 - npm (repo is committed with `package-lock.json`)
+- Docker (for the local MySQL). If you'd rather point at an existing MySQL
+  server, just set `DATABASE_URL` in `.env` and skip the `docker compose`
+  step below.
 
 ### Install & run
 
@@ -139,11 +142,21 @@ Native language is Estonian; English is a first-class second locale.
 git clone <your-fork-url>
 cd discgolf-tracker
 npm install
-cp .env.example .env      # or edit .env directly, see below
-npx prisma migrate dev    # applies migrations, creates dev.db
+cp .env.example .env      # dev credentials pre-filled; safe for local use
+docker compose up -d      # starts MySQL 8 on localhost:3306
+npx prisma migrate deploy # applies migrations to the `discgolf` database
 npm run seed              # optional: seed six sample Estonian courses
 npm run dev
 ```
+
+The docker-compose file creates two databases so the test suite doesn't
+touch dev data:
+
+- `discgolf` — the app's dev database
+- `discgolf_test` — used by `npm test`
+
+Stop MySQL with `docker compose down`. Add `-v` to also wipe the data
+volume (fresh DB next start).
 
 Open http://localhost:3000. The Estonian home page is at `/`; English at `/en`.
 
@@ -167,20 +180,21 @@ account and signs you in. From then on:
 
 ## Environment variables
 
-| Name                     | Default                                | Purpose                                                                                            |
-| ------------------------ | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`           | `file:./dev.db`                        | Prisma datasource. SQLite for dev / small self-host.                                               |
-| `ADMIN_PASSWORD`         | `admin123`                             | Bootstrap password for the first-ever superuser login **and** the HMAC secret for admin sessions. |
-| `SUPERUSER_EMAIL`        | `admin@local`                          | Email of the superuser account that gets created on first login.                                   |
-| `NEXT_PUBLIC_DONATE_URL` | `https://buymeacoffee.com/digiarendus` | URL for the "Support the project" footer link.                                                     |
+| Name                     | Default                                       | Purpose                                                                                            |
+| ------------------------ | --------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`           | `mysql://discgolf:dev@localhost:3306/discgolf`| MySQL connection string. In production, use the one from your Zone control panel.                  |
+| `ADMIN_PASSWORD`         | `admin123`                                    | Bootstrap password for the first-ever superuser login **and** the HMAC secret for admin sessions.  |
+| `SUPERUSER_EMAIL`        | `admin@local`                                 | Email of the superuser account that gets created on first login.                                   |
+| `NEXT_PUBLIC_DONATE_URL` | `https://buymeacoffee.com/digiarendus`        | URL for the "Support the project" footer link.                                                     |
+| `TEST_DATABASE_URL`      | *(vitest.config default)*                     | Optional. Override the URL Vitest uses if you're not running MySQL via the bundled docker-compose. |
 
-Create a `.env` file at the repo root:
+A ready-to-copy `.env.example` is checked in:
 
 ```env
-DATABASE_URL="file:./dev.db"
-SUPERUSER_EMAIL="you@example.com"
-ADMIN_PASSWORD="pick-something-long"
-NEXT_PUBLIC_DONATE_URL="https://buymeacoffee.com/yourhandle"
+DATABASE_URL="mysql://discgolf:dev@localhost:3306/discgolf"
+SUPERUSER_EMAIL="admin@local"
+ADMIN_PASSWORD="admin123"
+NEXT_PUBLIC_DONATE_URL="https://buymeacoffee.com/digiarendus"
 ```
 
 ---
@@ -391,11 +405,14 @@ npm test           # one-shot
 npm run test:watch # dev feedback loop
 ```
 
-- **73 tests, 6 files.** Vitest runs against a dedicated
-  `prisma/test.db` (gitignored) that's reset via `prisma migrate deploy` at
-  the start of a run and truncated before every test.
-- `test/setup.ts` sets `DATABASE_URL` and `ADMIN_PASSWORD` before any app
-  code imports the Prisma singleton.
+- **73 tests, 6 files.** Vitest runs against the `discgolf_test` MySQL
+  database (auto-created by docker-compose). Every run starts with
+  `prisma migrate reset --force --skip-seed`, and every test truncates its
+  own working tables in `beforeEach`.
+- `vitest.config.ts` sets `DATABASE_URL` (defaults to the docker-compose
+  test DB, overridable via `TEST_DATABASE_URL`) and `ADMIN_PASSWORD` before
+  any app code imports the Prisma singleton.
+- You need MySQL running before `npm test` — `docker compose up -d` first.
 - Route handlers are tested by calling the exported `GET` / `POST` / etc.
   directly with a real `Request`, so tests exercise the full validation +
   DB code paths. `next/headers` is mocked per test file with a
@@ -426,25 +443,35 @@ banner) — add `@testing-library/react` if you want to close that gap.
 
 ## Deployment notes
 
-- **Any Node host works** — Vercel, Fly, a plain VPS, a Docker container.
-  The only runtime dependency is Node ≥ 20 and a writable disk for SQLite.
+- **Any Node host works** — Zone Media OÜ (Virtuaalserver/Cloud plans with
+  Node.js), Vercel, Fly, a plain VPS, a Docker container. Runtime deps are
+  Node ≥ 20 and a reachable MySQL server.
 - **Do change `ADMIN_PASSWORD` and `SUPERUSER_EMAIL`** before deploying
   anywhere. `ADMIN_PASSWORD` is (a) the bootstrap password used to create the
   very first superuser account and (b) the HMAC secret for admin session
   cookies — rotating it invalidates every outstanding admin session.
-- **Switching to Postgres** is a change of `datasource` in
-  `prisma/schema.prisma` plus a new migration; the app does not use any
-  SQLite-specific features.
 - **Reverse proxy** — ensure `X-Forwarded-Proto` is forwarded so cookies
   are marked secure in production. Next.js handles this when
   `Node.js` runs behind a trusted proxy.
-- **HTTPS is required in production** for `Secure` cookies and
-  service-worker-adjacent features.
+- **HTTPS is required in production** for `Secure` cookies.
+
+### Zone Media OÜ specifically
+
+1. Create a MySQL database from the Zone control panel (phpMyAdmin is fine
+   for the initial poke-around; the app talks to MySQL directly).
+2. Set `DATABASE_URL` in the app's environment to the connection string
+   Zone gives you — the shape is
+   `mysql://<user>:<password>@<host>:3306/<database>`.
+3. Set `SUPERUSER_EMAIL` and `ADMIN_PASSWORD` to values you'll remember.
+4. On the server, from the project directory, run
+   `npx prisma migrate deploy` once to create the schema.
+5. Start the app with `npm run start` (behind Zone's Node.js runtime).
+6. First login uses the env credentials and creates the superuser account.
 
 ### Docker (sketch)
 
 A minimal `Dockerfile` is easy to add — install deps, `npm run build`,
-`CMD ["npm", "start"]`, and mount a volume for the SQLite file. Not
+`CMD ["npm", "start"]`, and set `DATABASE_URL` at container start. Not
 included in the repo today.
 
 ---
