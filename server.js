@@ -9,7 +9,10 @@
  * myZone → Webhosting → System information; Apache's mod_proxy forwards
  * traffic there.
  */
-require("@next/env").loadEnvConfig(process.cwd(), false);
+// Resolve everything relative to this file, not to PM2's cwd. Zone's PM2
+// panel doesn't guarantee the working directory, so relying on process.cwd()
+// meant .env wasn't found and Next couldn't find the .next build output.
+require("@next/env").loadEnvConfig(__dirname, false);
 
 const { createServer } = require("http");
 const nextModule = require("next");
@@ -18,7 +21,7 @@ const next = nextModule.default ?? nextModule;
 const hostname = process.env.HOSTNAME || "127.0.0.1";
 const port = Number.parseInt(process.env.PORT || "3000", 10);
 
-const app = next({ dev: false, hostname, port });
+const app = next({ dev: false, hostname, port, dir: __dirname });
 const handle = app.getRequestHandler();
 
 app
