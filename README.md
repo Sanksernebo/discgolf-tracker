@@ -457,16 +457,32 @@ banner) — add `@testing-library/react` if you want to close that gap.
 
 ### Zone Media OÜ specifically
 
-1. Create a MySQL database from the Zone control panel (phpMyAdmin is fine
-   for the initial poke-around; the app talks to MySQL directly).
-2. Set `DATABASE_URL` in the app's environment to the connection string
-   Zone gives you — the shape is
-   `mysql://<user>:<password>@<host>:3306/<database>`.
-3. Set `SUPERUSER_EMAIL` and `ADMIN_PASSWORD` to values you'll remember.
-4. On the server, from the project directory, run
-   `npx prisma migrate deploy` once to create the schema.
-5. Start the app with `npm run start` (behind Zone's Node.js runtime).
-6. First login uses the env credentials and creates the superuser account.
+1. Create a MySQL database + user from the Zone control panel. Note the
+   host (e.g. `d129780.mysql.zonevs.eu`), DB name, and user.
+2. SSH into your Zone account and clone this repo under
+   `~/domains/<yourdomain>/app`.
+3. `npm ci` — installs deps and generates the Prisma client for Zone's
+   Linux (do not upload `node_modules` from your machine).
+4. Create `.env` in the project root with `DATABASE_URL`, `SUPERUSER_EMAIL`,
+   `ADMIN_PASSWORD`, and — this is Zone-specific — `HOSTNAME` set to your
+   account's **loopback IP** (myZone → Webhosting → System information)
+   and `PORT` set to a free port in the 1024–65535 range.
+5. `npx prisma migrate deploy` — creates the schema in your Zone DB.
+6. `npm run build` — produces the production output.
+7. myZone → Webhosting → **Main domain settings**: set
+   **mod_proxy backend port** to the port you picked in step 4.
+8. myZone → Webhosting → **PM2 and Node.js** → **Add new application**:
+   - **Application name:** `discgolf-tracker`
+   - **Script or PM2 .JSON:** the full path to `server.js` in the project
+     root (e.g. `/data01/virt129379/domeenid/www.digiarendus.ee/app/server.js`).
+   - **Maximum memory:** at least 256 MiB; 512 MiB is comfortable for a
+     small install. The 100 MiB default will constantly restart.
+9. First login uses the env credentials and creates the superuser account.
+
+`server.js` is a small entry point that boots Next.js programmatically and
+reads `HOSTNAME` / `PORT` from `.env` — Zone's PM2 panel doesn't accept
+CLI arguments, so a script file is the only way to configure the bind
+address. It works on any Node.js host, not just Zone.
 
 ### Docker (sketch)
 
