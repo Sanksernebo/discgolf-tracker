@@ -23,6 +23,9 @@
 # misc
 .DS_Store
 *.pem
+.agents
+.claude
+.windsurf
 
 # debug
 npm-debug.log*
@@ -39,3 +42,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+/src/generated/prisma
+.env
+
+# Prisma
+dev.db
+dev.db-journal
+test.db
+test.db-journal
+/src/generated/
+
+# Local tooling artefacts
+skills-lock.json
+prisma.config.ts

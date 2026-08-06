@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  id             String   @id @default(cuid())
+  nameEt         String
+  nameEn         String
+  county         String
+  city           String?
+  latitude       Float
+  longitude      Float
+  descriptionEt  String?
+  descriptionEn  String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  holes    Hole[]
+  checkIns CheckIn[]
+  issues   IssueReport[]
+  admins   CourseAdmin[]
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  role         String   // "superuser" | "courseAdmin"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  courses CourseAdmin[]
+}
+
+model CourseAdmin {
+  courseId String
+  adminId  String
+  createdAt DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  admin  Admin  @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@id([courseId, adminId])
+  @@index([adminId])
+}
+
+model Hole {
+  id       String @id @default(cuid())
+  courseId String
+  number   Int
+  par      Int
+  distance Int?
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, number])
+}
+
+model CheckIn {
+  id         String    @id @default(cuid())
+  courseId   String
+  deviceId   String
+  startedAt  DateTime  @default(now())
+  lastPingAt DateTime  @default(now())
+  endedAt    DateTime?
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@index([courseId, endedAt])
+  @@index([deviceId, endedAt])
+}
+
+model IssueReport {
+  id        String   @id @default(cuid())
+  courseId  String?
+  category  String
+  message   String
+  deviceId  String?
+  status    String   @default("open")
+  createdAt DateTime @default(now())
+
+  course Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+}
