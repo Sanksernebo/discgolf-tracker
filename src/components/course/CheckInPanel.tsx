@@ -8,6 +8,7 @@ import {
   ACTIVE_WINDOW_MINUTES,
   MAX_PARTY_SIZE,
 } from "@/lib/constants";
+import { PushSetup } from "@/components/PushSetup";
 
 type CheckIn = {
   id: string;
@@ -203,6 +204,11 @@ export function CheckInPanel({
             </button>
           </div>
         </div>
+
+        <PushSetup
+          compact
+          className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white/60 dark:bg-neutral-900/60 p-2 flex items-center justify-between gap-3 flex-wrap"
+        />
 
         {showReprompt && (
           <div className="rounded-xl bg-white dark:bg-neutral-900 border border-emerald-300 dark:border-emerald-700 p-3 flex items-center justify-between gap-3">

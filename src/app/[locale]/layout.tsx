@@ -24,6 +24,9 @@ export const viewport: Viewport = {
   ],
 };
 
+/** PWA + iOS meta: standalone home-screen install with an emoji fallback icon. */
+export const metadataBase = undefined;
+
 export function generateStaticParams() {
   return routing.locales.map((locale) => ({ locale }));
 }
@@ -38,6 +41,15 @@ export async function generateMetadata({
   return {
     title: t("title"),
     description: t("tagline"),
+    manifest: "/manifest.webmanifest",
+    appleWebApp: {
+      capable: true,
+      title: t("title"),
+      statusBarStyle: "default",
+    },
+    icons: {
+      apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+    },
   };
 }
 

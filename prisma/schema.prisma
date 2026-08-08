@@ -39,18 +39,34 @@ model Hole {
 }
 
 model CheckIn {
-  id         String    @id @default(cuid())
-  courseId   String
-  deviceId   String
-  partySize  Int       @default(1)
-  startedAt  DateTime  @default(now())
-  lastPingAt DateTime  @default(now())
-  endedAt    DateTime?
+  id                String    @id @default(cuid())
+  courseId          String
+  deviceId          String
+  partySize         Int       @default(1)
+  startedAt         DateTime  @default(now())
+  lastPingAt        DateTime  @default(now())
+  endedAt           DateTime?
+  // Throttle bookkeeping for the push worker: last time we sent a periodic
+  // reminder, and whether we've already sent the pre-checkout warning.
+  lastReminderAt    DateTime?
+  warningSentAt     DateTime?
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
   @@index([courseId, endedAt])
   @@index([deviceId, endedAt])
+}
+
+model PushSubscription {
+  id        String   @id @default(cuid())
+  deviceId  String
+  endpoint  String   @unique @db.VarChar(500)
+  p256dh    String   @db.VarChar(200)
+  auth      String   @db.VarChar(100)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([deviceId])
 }
 
 model IssueReport {

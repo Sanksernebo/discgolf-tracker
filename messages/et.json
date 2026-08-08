@@ -19,6 +19,15 @@
     "dark": "Tume",
     "system": "Süsteem"
   },
+  "push": {
+    "loading": "Laadin...",
+    "prompt": "Luba lukuekraani teavitused",
+    "enable": "Luba",
+    "enabled": "Teavitused sisse lülitatud",
+    "disable": "Lülita välja",
+    "denied": "Teavitused on brauseris keelatud. Luba need Safari sätetes.",
+    "iosInstallHint": "iPhone'is: puuduta jaga → \"Lisa avaekraanile\", seejärel ava rakendus avaekraanilt, et lubada teavitused."
+  },
   "cookies": {
     "title": "Küpsised ja privaatsus",
     "summary": "See rakendus kasutab ainult toimimiseks vajalikke küpsiseid — jälgimist ega reklaame ei ole. Kaardikaadid tulevad OpenStreetMapilt.",

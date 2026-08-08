@@ -186,6 +186,9 @@ account and signs you in. From then on:
 | `ADMIN_PASSWORD`         | `admin123`                                    | Bootstrap password for the first-ever superuser login **and** the HMAC secret for admin sessions.  |
 | `SUPERUSER_EMAIL`        | `admin@local`                                 | Email of the superuser account that gets created on first login.                                   |
 | `NEXT_PUBLIC_APP_URL`    | *(derived from X-Forwarded-Host)*             | Public base URL. Used to build QR codes and the `/checkin/<id>` redirect. Set explicitly in production to survive proxy quirks. |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | *(empty; push disabled)*                | VAPID public key. Browser reads this to subscribe. Generate with `node scripts/generate-vapid.mjs`. |
+| `VAPID_PRIVATE_KEY`      | *(empty; push disabled)*                      | VAPID private key. Server-only. Rotating it invalidates every push subscription. |
+| `VAPID_CONTACT`          | `mailto:info@digiarendus.ee`                  | Contact URL sent to push services in case of problems.                                             |
 | `NEXT_PUBLIC_DONATE_URL` | `https://buymeacoffee.com/digiarendus`        | URL for the "Support the project" footer link.                                                     |
 | `TEST_DATABASE_URL`      | *(vitest.config default)*                     | Optional. Override the URL Vitest uses if you're not running MySQL via the bundled docker-compose. |
 
@@ -484,6 +487,45 @@ banner) — add `@testing-library/react` if you want to close that gap.
 reads `HOSTNAME` / `PORT` from `.env` — Zone's PM2 panel doesn't accept
 CLI arguments, so a script file is the only way to configure the bind
 address. It works on any Node.js host, not just Zone.
+
+### Push notifications (optional but recommended)
+
+Web Push works over HTTPS. On iOS it additionally requires users to add
+the site to their home screen first (Apple's rule, no way around it).
+
+Set-up, once per install:
+
+1. Generate a VAPID keypair on any machine that has this repo:
+   `node scripts/generate-vapid.mjs`
+2. Paste the three env vars it prints into `.env` on the server (and into
+   Zone's env-var panel if you use that).
+3. Rebuild the app so the public key gets inlined into the client bundle:
+   `npm run build`.
+4. Restart the web app in PM2.
+5. Register a **second** PM2 application for the reminder worker:
+   - **Application name:** `discgolf-worker`
+   - **Script or PM2 .JSON:** `<project-path>/worker.js`
+   - **Maximum memory:** 100 MiB (this process barely uses any).
+6. Drop three real PNG icons into `public/icons/` (see the README there);
+   without them the home-screen icon on iOS falls back to a screenshot.
+
+Behaviour on the client:
+- On first visit, the check-in panel shows either "Enable notifications"
+  (Android / desktop) or an "Add to Home Screen" hint (iOS Safari not yet
+  installed). Once installed on iOS, launching from the home-screen icon
+  reveals the enable button.
+- On check-in, the browser gets an immediate "You're checked in" push.
+- Every 90 minutes while active, the worker sends a "Still on the course?"
+  reminder.
+- 15 minutes before the 3-hour inactivity auto-checkout, the worker sends
+  a warning so the user can confirm and stay checked in.
+
+Behaviour on the server:
+- Missing VAPID keys are fine — the app skips push sending silently and
+  the enable-notifications UI hides itself.
+- Dead subscriptions (410 Gone / 404) are auto-pruned on send.
+- The worker is fully independent from the web server; either can be
+  restarted alone.
 
 ### Docker (sketch)
 

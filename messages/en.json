@@ -19,6 +19,15 @@
     "dark": "Dark",
     "system": "System"
   },
+  "push": {
+    "loading": "Loading...",
+    "prompt": "Get lock-screen notifications",
+    "enable": "Enable",
+    "enabled": "Notifications on",
+    "disable": "Turn off",
+    "denied": "Notifications are blocked in your browser. Enable them in your Safari settings.",
+    "iosInstallHint": "On iPhone: tap Share → \"Add to Home Screen\", then open the app from the home screen to enable notifications."
+  },
   "cookies": {
     "title": "Cookies & privacy",
     "summary": "This app uses only strictly functional cookies — no tracking, no ads. Map tiles are served by OpenStreetMap.",
