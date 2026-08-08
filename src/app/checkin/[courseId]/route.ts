@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateDeviceId } from "@/lib/device";
 import { activeSinceThreshold } from "@/lib/traffic";
+import { publicOriginFromRequest } from "@/lib/public-url";
 
 export async function GET(
   req: Request,
@@ -14,7 +15,7 @@ export async function GET(
     select: { id: true },
   });
 
-  const origin = new URL(req.url).origin;
+  const origin = publicOriginFromRequest(req);
 
   if (!course) {
     return NextResponse.redirect(`${origin}/`);

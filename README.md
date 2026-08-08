@@ -185,6 +185,7 @@ account and signs you in. From then on:
 | `DATABASE_URL`           | `mysql://discgolf:dev@localhost:3306/discgolf`| MySQL connection string. In production, use the one from your Zone control panel.                  |
 | `ADMIN_PASSWORD`         | `admin123`                                    | Bootstrap password for the first-ever superuser login **and** the HMAC secret for admin sessions.  |
 | `SUPERUSER_EMAIL`        | `admin@local`                                 | Email of the superuser account that gets created on first login.                                   |
+| `NEXT_PUBLIC_APP_URL`    | *(derived from X-Forwarded-Host)*             | Public base URL. Used to build QR codes and the `/checkin/<id>` redirect. Set explicitly in production to survive proxy quirks. |
 | `NEXT_PUBLIC_DONATE_URL` | `https://buymeacoffee.com/digiarendus`        | URL for the "Support the project" footer link.                                                     |
 | `TEST_DATABASE_URL`      | *(vitest.config default)*                     | Optional. Override the URL Vitest uses if you're not running MySQL via the bundled docker-compose. |
 

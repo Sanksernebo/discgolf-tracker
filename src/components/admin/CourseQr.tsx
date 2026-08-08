@@ -16,7 +16,12 @@ export function CourseQr({
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
-    setOrigin(window.location.origin);
+    // NEXT_PUBLIC_APP_URL wins if set at build time — this is what an admin
+    // should configure in production so a printed QR always points at the
+    // real public URL regardless of how they happened to open the admin
+    // panel. Otherwise fall back to the browser's current origin.
+    const explicit = process.env.NEXT_PUBLIC_APP_URL;
+    setOrigin((explicit ?? window.location.origin).replace(/\/$/, ""));
   }, []);
 
   const url = origin ? `${origin}/checkin/${course.id}` : "";
