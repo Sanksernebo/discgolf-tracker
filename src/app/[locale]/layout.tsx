@@ -7,7 +7,7 @@ import "../globals.css";
 import { routing } from "@/i18n/routing";
 import { SiteHeader } from "@/components/SiteHeader";
 import { SiteFooter } from "@/components/SiteFooter";
-import { CookieBanner } from "@/components/CookieBanner";
+import { CookieBannerLoader } from "@/components/CookieBannerLoader";
 import { ThemeScript } from "@/components/ThemeScript";
 
 const geistSans = Geist({
@@ -76,7 +76,7 @@ export default async function LocaleLayout({
             {children}
           </main>
           <SiteFooter />
-          <CookieBanner />
+          <CookieBannerLoader />
         </NextIntlClientProvider>
       </body>
     </html>
