@@ -39,10 +39,60 @@ describe("POST /api/checkin", () => {
     const rows = await prisma.checkIn.findMany({ where: { courseId } });
     expect(rows).toHaveLength(1);
     expect(rows[0].endedAt).toBeNull();
+    // Defaults to a party of 1 when the client doesn't specify.
+    expect(rows[0].partySize).toBe(1);
 
     // Cookie was minted for the fresh device.
     expect(cookieStore.current.get("dg_device")?.value).toBeTruthy();
     expect(cookieStore.current.get("dg_device")?.value).toBe(rows[0].deviceId);
+  });
+
+  it("creates a check-in with the specified party size", async () => {
+    const { POST } = await import("@/app/api/checkin/route");
+    const courseId = await seedCourse();
+
+    const res = await POST(
+      jsonRequest("http://x/api/checkin", { courseId, partySize: 4 }),
+    );
+    expect(res.status).toBe(200);
+    const row = await prisma.checkIn.findFirstOrThrow({ where: { courseId } });
+    expect(row.partySize).toBe(4);
+  });
+
+  it("updates party size on repeat check-in for the same course", async () => {
+    const { POST } = await import("@/app/api/checkin/route");
+    const courseId = await seedCourse();
+
+    await POST(jsonRequest("http://x/api/checkin", { courseId, partySize: 2 }));
+    const first = await prisma.checkIn.findFirstOrThrow({ where: { courseId } });
+    expect(first.partySize).toBe(2);
+
+    // Bump the group up
+    await POST(jsonRequest("http://x/api/checkin", { courseId, partySize: 5 }));
+    const after = await prisma.checkIn.findMany({ where: { courseId } });
+    expect(after).toHaveLength(1);
+    expect(after[0].id).toBe(first.id);
+    expect(after[0].partySize).toBe(5);
+  });
+
+  it("rejects a party size above the cap", async () => {
+    const { POST } = await import("@/app/api/checkin/route");
+    const courseId = await seedCourse();
+
+    const res = await POST(
+      jsonRequest("http://x/api/checkin", { courseId, partySize: 999 }),
+    );
+    expect(res.status).toBe(400);
+  });
+
+  it("rejects a party size below 1", async () => {
+    const { POST } = await import("@/app/api/checkin/route");
+    const courseId = await seedCourse();
+
+    const res = await POST(
+      jsonRequest("http://x/api/checkin", { courseId, partySize: 0 }),
+    );
+    expect(res.status).toBe(400);
   });
 
   it("refreshes lastPingAt when re-checking-in on the same course", async () => {

@@ -42,6 +42,7 @@ model CheckIn {
   id         String    @id @default(cuid())
   courseId   String
   deviceId   String
+  partySize  Int       @default(1)
   startedAt  DateTime  @default(now())
   lastPingAt DateTime  @default(now())
   endedAt    DateTime?

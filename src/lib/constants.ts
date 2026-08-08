@@ -5,6 +5,10 @@ export const ACTIVE_WINDOW_MINUTES = 180;
 // Client should re-ping the server this often (ms) while marked "on course".
 export const PING_INTERVAL_MS = 5 * 60 * 1000; // 5 minutes
 
+// One check-in can represent a group. Cap at a sane upper bound so a
+// typo in the +/- UI can't advertise "50 people on the course".
+export const MAX_PARTY_SIZE = 8;
+
 // Estonian counties, used to group courses on the map. Coordinates roughly at
 // each county's center; used as fallback bubble anchors when a county has
 // multiple courses.

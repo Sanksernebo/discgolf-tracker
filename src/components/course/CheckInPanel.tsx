@@ -3,12 +3,17 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import { PING_INTERVAL_MS, ACTIVE_WINDOW_MINUTES } from "@/lib/constants";
+import {
+  PING_INTERVAL_MS,
+  ACTIVE_WINDOW_MINUTES,
+  MAX_PARTY_SIZE,
+} from "@/lib/constants";
 
 type CheckIn = {
   id: string;
   startedAt: string;
   lastPingAt: string;
+  partySize: number;
 };
 
 export function CheckInPanel({
@@ -24,6 +29,8 @@ export function CheckInPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showReprompt, setShowReprompt] = useState(false);
+  // Pre-check-in party size (before the user hits "Check in").
+  const [pendingPartySize, setPendingPartySize] = useState(1);
   const repromptTimer = useRef<number | null>(null);
 
   const scheduleReprompt = useCallback(() => {
@@ -66,20 +73,44 @@ export function CheckInPanel({
     };
   }, [checkIn, scheduleReprompt]);
 
+  async function postCheckIn(partySize: number) {
+    const res = await fetch("/api/checkin", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ courseId, partySize }),
+    });
+    if (!res.ok) throw new Error("checkin_failed");
+    const data = (await res.json()) as { checkIn: CheckIn };
+    setCheckIn(data.checkIn);
+  }
+
   async function doCheckIn() {
     setBusy(true);
     setError(null);
     try {
-      const res = await fetch("/api/checkin", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ courseId }),
-      });
-      if (!res.ok) throw new Error("checkin_failed");
-      const data = (await res.json()) as { checkIn: CheckIn };
-      setCheckIn(data.checkIn);
+      await postCheckIn(pendingPartySize);
       router.refresh();
     } catch {
+      setError(t("checkin.error"));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  /** Called from the active-check-in +/- buttons. Optimistic UI. */
+  async function adjustParty(delta: number) {
+    if (!checkIn) return;
+    const next = Math.max(1, Math.min(MAX_PARTY_SIZE, checkIn.partySize + delta));
+    if (next === checkIn.partySize) return;
+    const previous = checkIn.partySize;
+    setCheckIn({ ...checkIn, partySize: next });
+    setBusy(true);
+    try {
+      await postCheckIn(next);
+      router.refresh();
+    } catch {
+      // roll back
+      setCheckIn({ ...checkIn, partySize: previous });
       setError(t("checkin.error"));
     } finally {
       setBusy(false);
@@ -112,7 +143,7 @@ export function CheckInPanel({
     const startedAt = new Date(checkIn.startedAt);
     return (
       <div className="rounded-2xl border border-emerald-300 dark:border-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 p-4 flex flex-col gap-3">
-        <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center justify-between gap-3 flex-wrap">
           <div>
             <div className="text-sm font-semibold text-emerald-800 dark:text-emerald-200">
               {t("course.youAreHere")}
@@ -124,17 +155,55 @@ export function CheckInPanel({
                   minute: "2-digit",
                 }),
               })}
+              {" · "}
+              {t("course.partyOf", { count: checkIn.partySize })}
             </div>
           </div>
           <button
             type="button"
             onClick={doCheckOut}
             disabled={busy}
-            className="px-4 py-2 rounded-full bg-white dark:bg-neutral-900 border border-emerald-400 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition disabled:opacity-50"
+            className="px-4 py-2 rounded-full bg-white dark:bg-neutral-900 border border-emerald-400 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-neutral-800 transition disabled:opacity-50 min-h-11"
           >
             {t("course.checkOut")}
           </button>
         </div>
+
+        {/* Party size +/- controls for a live check-in. */}
+        <div
+          role="group"
+          aria-label={t("course.partySize")}
+          className="flex items-center gap-3 text-sm text-emerald-800 dark:text-emerald-200"
+        >
+          <span>{t("course.partySize")}:</span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => adjustParty(-1)}
+              disabled={busy || checkIn.partySize <= 1}
+              aria-label={t("course.removePlayer")}
+              className="h-9 w-9 grid place-items-center rounded-full border border-emerald-400 dark:border-emerald-700 bg-white dark:bg-neutral-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-neutral-800 disabled:opacity-40"
+            >
+              −
+            </button>
+            <span
+              aria-live="polite"
+              className="min-w-6 text-center font-semibold"
+            >
+              {checkIn.partySize}
+            </span>
+            <button
+              type="button"
+              onClick={() => adjustParty(1)}
+              disabled={busy || checkIn.partySize >= MAX_PARTY_SIZE}
+              aria-label={t("course.addPlayer")}
+              className="h-9 w-9 grid place-items-center rounded-full border border-emerald-400 dark:border-emerald-700 bg-white dark:bg-neutral-900 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-neutral-800 disabled:opacity-40"
+            >
+              +
+            </button>
+          </div>
+        </div>
+
         {showReprompt && (
           <div className="rounded-xl bg-white dark:bg-neutral-900 border border-emerald-300 dark:border-emerald-700 p-3 flex items-center justify-between gap-3">
             <div className="text-sm">{t("course.stillHerePrompt")}</div>
@@ -142,14 +211,14 @@ export function CheckInPanel({
               <button
                 type="button"
                 onClick={confirmStillHere}
-                className="px-3 py-1.5 text-sm rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition"
+                className="px-3 py-1.5 text-sm rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition min-h-11"
               >
                 {t("course.stillHere")}
               </button>
               <button
                 type="button"
                 onClick={doCheckOut}
-                className="px-3 py-1.5 text-sm rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
+                className="px-3 py-1.5 text-sm rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition min-h-11"
               >
                 {t("course.leaveNow")}
               </button>
@@ -161,19 +230,66 @@ export function CheckInPanel({
   }
 
   return (
-    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 flex items-center justify-between gap-3">
+    <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 flex flex-col gap-3">
       <div className="text-sm text-neutral-600 dark:text-neutral-300">
         {t("course.checkIn")}
       </div>
-      <button
-        type="button"
-        onClick={doCheckIn}
-        disabled={busy}
-        className="px-4 py-2 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition disabled:opacity-50"
+
+      {/* Party size selector before check-in. Default 1 = one click to check in solo. */}
+      <div
+        role="group"
+        aria-label={t("course.partySize")}
+        className="flex items-center gap-3 text-sm"
       >
-        {busy ? t("checkin.checkingIn") : t("course.checkIn")}
-      </button>
-      {error && <span className="text-xs text-red-600">{error}</span>}
+        <span className="text-neutral-600 dark:text-neutral-300">
+          {t("course.partySize")}:
+        </span>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setPendingPartySize((v) => Math.max(1, v - 1))}
+            disabled={busy || pendingPartySize <= 1}
+            aria-label={t("course.removePlayer")}
+            className="h-9 w-9 grid place-items-center rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40"
+          >
+            −
+          </button>
+          <span
+            aria-live="polite"
+            className="min-w-6 text-center font-semibold"
+          >
+            {pendingPartySize}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              setPendingPartySize((v) => Math.min(MAX_PARTY_SIZE, v + 1))
+            }
+            disabled={busy || pendingPartySize >= MAX_PARTY_SIZE}
+            aria-label={t("course.addPlayer")}
+            className="h-9 w-9 grid place-items-center rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 disabled:opacity-40"
+          >
+            +
+          </button>
+        </div>
+      </div>
+
+      <p className="text-xs text-neutral-500">{t("course.partySizeHelp")}</p>
+
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="text-xs text-neutral-500">
+          {t("course.partyOf", { count: pendingPartySize })}
+        </div>
+        <button
+          type="button"
+          onClick={doCheckIn}
+          disabled={busy}
+          className="px-4 py-2 rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition disabled:opacity-50 min-h-11"
+        >
+          {busy ? t("checkin.checkingIn") : t("course.checkIn")}
+        </button>
+        {error && <span className="text-xs text-red-600">{error}</span>}
+      </div>
     </div>
   );
 }

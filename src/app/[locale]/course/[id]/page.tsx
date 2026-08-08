@@ -132,6 +132,7 @@ export default async function CoursePage({
                 id: active.id,
                 startedAt: active.startedAt.toISOString(),
                 lastPingAt: active.lastPingAt.toISOString(),
+                partySize: active.partySize,
               }
             : null
         }

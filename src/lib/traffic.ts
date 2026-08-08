@@ -5,7 +5,11 @@ export function activeSinceThreshold(): Date {
   return new Date(Date.now() - ACTIVE_WINDOW_MINUTES * 60 * 1000);
 }
 
-/** Count of active players per course (any course id given, plus zero-fill for others). */
+/**
+ * Player count per course, summing the party size of every active check-in
+ * (rather than counting rows) so one row for a group of five contributes
+ * five to the traffic total.
+ */
 export async function getActiveCountsByCourse(
   courseIds?: string[],
 ): Promise<Record<string, number>> {
@@ -17,7 +21,7 @@ export async function getActiveCountsByCourse(
       lastPingAt: { gt: since },
       ...(courseIds ? { courseId: { in: courseIds } } : {}),
     },
-    _count: { _all: true },
+    _sum: { partySize: true },
   });
 
   const out: Record<string, number> = {};
@@ -25,7 +29,7 @@ export async function getActiveCountsByCourse(
     for (const id of courseIds) out[id] = 0;
   }
   for (const r of rows) {
-    out[r.courseId] = r._count._all;
+    out[r.courseId] = r._sum.partySize ?? 0;
   }
   return out;
 }

@@ -3,9 +3,13 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getOrCreateDeviceId } from "@/lib/device";
 import { activeSinceThreshold } from "@/lib/traffic";
+import { MAX_PARTY_SIZE } from "@/lib/constants";
 
 const Body = z.object({
   courseId: z.string().min(1),
+  // Optional: how many players this one check-in represents. Defaults to 1
+  // so the plain "just me" flow stays a single argument-less button click.
+  partySize: z.number().int().min(1).max(MAX_PARTY_SIZE).optional(),
 });
 
 export async function POST(req: Request) {
@@ -14,7 +18,7 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
-  const { courseId } = parsed.data;
+  const { courseId, partySize } = parsed.data;
 
   const course = await prisma.course.findUnique({ where: { id: courseId } });
   if (!course) {
@@ -24,7 +28,9 @@ export async function POST(req: Request) {
   const deviceId = await getOrCreateDeviceId();
   const since = activeSinceThreshold();
 
-  // If already active on this course, just refresh the ping.
+  // If already active on this course, refresh the ping and — if the client
+  // is telling us — update the party size too. Lets +/- UI operate against
+  // the same endpoint with no separate PATCH.
   const existing = await prisma.checkIn.findFirst({
     where: {
       deviceId,
@@ -37,7 +43,10 @@ export async function POST(req: Request) {
   if (existing) {
     const updated = await prisma.checkIn.update({
       where: { id: existing.id },
-      data: { lastPingAt: new Date() },
+      data: {
+        lastPingAt: new Date(),
+        ...(partySize != null ? { partySize } : {}),
+      },
     });
     return NextResponse.json({ checkIn: updated });
   }
@@ -49,7 +58,7 @@ export async function POST(req: Request) {
   });
 
   const created = await prisma.checkIn.create({
-    data: { courseId, deviceId },
+    data: { courseId, deviceId, partySize: partySize ?? 1 },
   });
   return NextResponse.json({ checkIn: created });
 }

@@ -22,7 +22,7 @@ describe("activeSinceThreshold", () => {
 });
 
 describe("getActiveCountsByCourse", () => {
-  it("counts only check-ins that are unended AND pinged within the window", async () => {
+  it("sums partySize of check-ins that are unended AND pinged within the window", async () => {
     const c1 = await seedCourse({ nameEt: "A" });
     const c2 = await seedCourse({ nameEt: "B" });
 
@@ -31,27 +31,28 @@ describe("getActiveCountsByCourse", () => {
 
     await prisma.checkIn.createMany({
       data: [
-        // active on c1
-        { courseId: c1, deviceId: "d1", startedAt: now, lastPingAt: now },
-        { courseId: c1, deviceId: "d2", startedAt: now, lastPingAt: now },
-        // ended -> not counted
+        // active on c1: solo + a group of 3 => 4
+        { courseId: c1, deviceId: "d1", startedAt: now, lastPingAt: now, partySize: 1 },
+        { courseId: c1, deviceId: "d2", startedAt: now, lastPingAt: now, partySize: 3 },
+        // ended -> not counted (even if partySize is huge)
         {
           courseId: c1,
           deviceId: "d3",
           startedAt: now,
           lastPingAt: now,
           endedAt: now,
+          partySize: 8,
         },
         // stale ping -> not counted
-        { courseId: c1, deviceId: "d4", startedAt: stale, lastPingAt: stale },
+        { courseId: c1, deviceId: "d4", startedAt: stale, lastPingAt: stale, partySize: 5 },
         // active on c2
-        { courseId: c2, deviceId: "d5", startedAt: now, lastPingAt: now },
+        { courseId: c2, deviceId: "d5", startedAt: now, lastPingAt: now, partySize: 2 },
       ],
     });
 
     const counts = await getActiveCountsByCourse([c1, c2]);
-    expect(counts[c1]).toBe(2);
-    expect(counts[c2]).toBe(1);
+    expect(counts[c1]).toBe(4);
+    expect(counts[c2]).toBe(2);
   });
 
   it("zero-fills courses that have no active check-ins when ids are supplied", async () => {
