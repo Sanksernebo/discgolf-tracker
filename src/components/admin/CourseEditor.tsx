@@ -99,13 +99,22 @@ export function CourseEditor({
   }
 
   function addHole() {
-    setDraft((d) => ({
-      ...d,
-      holes: [
-        ...d.holes,
-        { number: d.holes.length + 1, par: 3, distance: null },
-      ],
-    }));
+    setDraft((d) => {
+      // Use max(existing) + 1 rather than length + 1 so deleting a hole
+      // from the middle and adding a new one doesn't collide with an
+      // existing number (which would fail the (courseId, number) unique
+      // constraint on save).
+      const nextNumber = d.holes.length
+        ? Math.max(...d.holes.map((h) => h.number)) + 1
+        : 1;
+      return {
+        ...d,
+        holes: [
+          ...d.holes,
+          { number: nextNumber, par: 3, distance: null },
+        ],
+      };
+    });
   }
 
   function removeHole(idx: number) {
