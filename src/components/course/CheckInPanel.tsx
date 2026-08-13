@@ -1,13 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
-import {
-  PING_INTERVAL_MS,
-  ACTIVE_WINDOW_MINUTES,
-  MAX_PARTY_SIZE,
-} from "@/lib/constants";
+import { PING_INTERVAL_MS, MAX_PARTY_SIZE } from "@/lib/constants";
 import { PushSetup } from "@/components/PushSetup";
 
 type CheckIn = {
@@ -29,29 +25,17 @@ export function CheckInPanel({
   const [checkIn, setCheckIn] = useState<CheckIn | null>(initialCheckIn);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showReprompt, setShowReprompt] = useState(false);
+  /** Non-null while showing "you have been checked out" after auto-end. */
+  const [checkedOutNotice, setCheckedOutNotice] = useState<null | "auto" | "self">(null);
   // Pre-check-in party size (before the user hits "Check in").
   const [pendingPartySize, setPendingPartySize] = useState(1);
-  const repromptTimer = useRef<number | null>(null);
-
-  const scheduleReprompt = useCallback(() => {
-    if (repromptTimer.current) {
-      window.clearTimeout(repromptTimer.current);
-    }
-    // Show the "still here?" prompt at 2/3 of the auto-checkout window.
-    const promptAfterMs = (ACTIVE_WINDOW_MINUTES * 60 * 1000 * 2) / 3;
-    repromptTimer.current = window.setTimeout(() => {
-      setShowReprompt(true);
-    }, promptAfterMs);
-  }, []);
 
   useEffect(() => {
-    if (!checkIn) {
-      if (repromptTimer.current) window.clearTimeout(repromptTimer.current);
-      return;
-    }
-    scheduleReprompt();
-    // Heartbeat while active.
+    if (!checkIn) return;
+    // Heartbeat while active. If the server tells us the session is over
+    // (either the 3-hour hard cap or ping window elapsed), transition to
+    // the "checked out" state and surface a passive notice — we don't ask
+    // the user to confirm anything, it's already happened.
     const interval = window.setInterval(async () => {
       try {
         const res = await fetch("/api/ping", { method: "POST" });
@@ -61,6 +45,7 @@ export function CheckInPanel({
         };
         if (!data.active) {
           setCheckIn(null);
+          setCheckedOutNotice("auto");
         } else if (data.checkIn) {
           setCheckIn(data.checkIn);
         }
@@ -70,9 +55,8 @@ export function CheckInPanel({
     }, PING_INTERVAL_MS);
     return () => {
       window.clearInterval(interval);
-      if (repromptTimer.current) window.clearTimeout(repromptTimer.current);
     };
-  }, [checkIn, scheduleReprompt]);
+  }, [checkIn]);
 
   async function postCheckIn(partySize: number) {
     const res = await fetch("/api/checkin", {
@@ -88,6 +72,7 @@ export function CheckInPanel({
   async function doCheckIn() {
     setBusy(true);
     setError(null);
+    setCheckedOutNotice(null); // fresh session cancels any lingering notice
     try {
       await postCheckIn(pendingPartySize);
       router.refresh();
@@ -123,20 +108,10 @@ export function CheckInPanel({
     try {
       await fetch("/api/checkout", { method: "POST" });
       setCheckIn(null);
-      setShowReprompt(false);
+      setCheckedOutNotice("self");
       router.refresh();
     } finally {
       setBusy(false);
-    }
-  }
-
-  async function confirmStillHere() {
-    setShowReprompt(false);
-    try {
-      await fetch("/api/ping", { method: "POST" });
-      scheduleReprompt();
-    } catch {
-      /* ignore */
     }
   }
 
@@ -209,34 +184,33 @@ export function CheckInPanel({
           compact
           className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-white/60 dark:bg-neutral-900/60 p-2 flex items-center justify-between gap-3 flex-wrap"
         />
-
-        {showReprompt && (
-          <div className="rounded-xl bg-white dark:bg-neutral-900 border border-emerald-300 dark:border-emerald-700 p-3 flex items-center justify-between gap-3">
-            <div className="text-sm">{t("course.stillHerePrompt")}</div>
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={confirmStillHere}
-                className="px-3 py-1.5 text-sm rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition min-h-11"
-              >
-                {t("course.stillHere")}
-              </button>
-              <button
-                type="button"
-                onClick={doCheckOut}
-                className="px-3 py-1.5 text-sm rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition min-h-11"
-              >
-                {t("course.leaveNow")}
-              </button>
-            </div>
-          </div>
-        )}
       </div>
     );
   }
 
   return (
     <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 flex flex-col gap-3">
+      {checkedOutNotice && (
+        <div
+          role="status"
+          className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-neutral-50 dark:bg-neutral-950 p-3 flex items-start justify-between gap-3"
+        >
+          <div className="text-sm">
+            {checkedOutNotice === "auto"
+              ? t("course.autoCheckedOut")
+              : t("course.selfCheckedOut")}
+          </div>
+          <button
+            type="button"
+            onClick={() => setCheckedOutNotice(null)}
+            aria-label={t("common.close")}
+            className="text-neutral-500 hover:text-neutral-900 dark:hover:text-white text-sm min-h-9"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+
       <div className="text-sm text-neutral-600 dark:text-neutral-300">
         {t("course.checkIn")}
       </div>

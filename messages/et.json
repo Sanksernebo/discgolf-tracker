@@ -26,7 +26,8 @@
     "enabled": "Teavitused sisse lülitatud",
     "disable": "Lülita välja",
     "denied": "Teavitused on brauseris keelatud. Luba need Safari sätetes.",
-    "iosInstallHint": "iPhone'is: puuduta jaga → \"Lisa avaekraanile\", seejärel ava rakendus avaekraanilt, et lubada teavitused."
+    "iosInstallHint": "iPhone'is: puuduta jaga → \"Lisa avaekraanile\", seejärel ava rakendus avaekraanilt, et lubada teavitused.",
+    "iosNeedsSafari": "iPhone'is töötavad lukuekraani teavitused ainult Safaris. Ava see leht Safaris, seejärel jaga → \"Lisa avaekraanile\"."
   },
   "cookies": {
     "title": "Küpsised ja privaatsus",
@@ -81,12 +82,11 @@
     "removePlayer": "Eemalda mängija",
     "youAreHere": "Sa oled märgitud sellele rajale",
     "checkedInAt": "Registreeritud kell {time}",
-    "stillHerePrompt": "Kas oled endiselt rajal?",
-    "stillHere": "Jah, olen",
-    "leaveNow": "Ei, lõpetan",
     "reportIssue": "Teata probleemist",
     "notFound": "Rada ei leitud",
-    "backToCountyMap": "Tagasi {county} radade juurde"
+    "backToCountyMap": "Tagasi {county} radade juurde",
+    "autoCheckedOut": "Sind on rajalt maha märgitud (aeg sai täis).",
+    "selfCheckedOut": "Sa oled rajalt lahkunud."
   },
   "checkin": {
     "checkingIn": "Registreerin rajale...",

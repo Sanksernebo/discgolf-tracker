@@ -26,7 +26,8 @@
     "enabled": "Notifications on",
     "disable": "Turn off",
     "denied": "Notifications are blocked in your browser. Enable them in your Safari settings.",
-    "iosInstallHint": "On iPhone: tap Share → \"Add to Home Screen\", then open the app from the home screen to enable notifications."
+    "iosInstallHint": "On iPhone: tap Share → \"Add to Home Screen\", then open the app from the home screen to enable notifications.",
+    "iosNeedsSafari": "On iPhone, lock-screen notifications only work in Safari. Open this page in Safari, then Share → \"Add to Home Screen\"."
   },
   "cookies": {
     "title": "Cookies & privacy",
@@ -81,12 +82,11 @@
     "removePlayer": "Remove player",
     "youAreHere": "You are marked on this course",
     "checkedInAt": "Checked in at {time}",
-    "stillHerePrompt": "Are you still on the course?",
-    "stillHere": "Yes, I'm here",
-    "leaveNow": "No, ending now",
     "reportIssue": "Report an issue",
     "notFound": "Course not found",
-    "backToCountyMap": "Back to {county} courses"
+    "backToCountyMap": "Back to {county} courses",
+    "autoCheckedOut": "You've been checked out of the course (session ended).",
+    "selfCheckedOut": "You've left the course."
   },
   "checkin": {
     "checkingIn": "Checking you in...",

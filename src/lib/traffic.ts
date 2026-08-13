@@ -6,6 +6,26 @@ export function activeSinceThreshold(): Date {
 }
 
 /**
+ * A check-in counts as "active" when ALL of these hold:
+ *   - endedAt IS NULL (not explicitly checked out)
+ *   - lastPingAt > now - ACTIVE_WINDOW_MINUTES (still pinging)
+ *   - startedAt > now - ACTIVE_WINDOW_MINUTES (hasn't outlived the hard cap)
+ *
+ * The hard cap on `startedAt` is what enforces the "3 hours after check-in
+ * you're done" contract even on phones that keep the tab alive in the
+ * background and never stop pinging.
+ */
+function activeWhere(extra?: object) {
+  const since = activeSinceThreshold();
+  return {
+    endedAt: null,
+    lastPingAt: { gt: since },
+    startedAt: { gt: since },
+    ...extra,
+  };
+}
+
+/**
  * Player count per course, summing the party size of every active check-in
  * (rather than counting rows) so one row for a group of five contributes
  * five to the traffic total.
@@ -13,14 +33,11 @@ export function activeSinceThreshold(): Date {
 export async function getActiveCountsByCourse(
   courseIds?: string[],
 ): Promise<Record<string, number>> {
-  const since = activeSinceThreshold();
   const rows = await prisma.checkIn.groupBy({
     by: ["courseId"],
-    where: {
-      endedAt: null,
-      lastPingAt: { gt: since },
-      ...(courseIds ? { courseId: { in: courseIds } } : {}),
-    },
+    where: activeWhere(
+      courseIds ? { courseId: { in: courseIds } } : undefined,
+    ),
     _sum: { partySize: true },
   });
 
@@ -39,14 +56,8 @@ export async function getActiveCheckInForDevice(
   deviceId: string,
   courseId?: string,
 ) {
-  const since = activeSinceThreshold();
   return prisma.checkIn.findFirst({
-    where: {
-      deviceId,
-      endedAt: null,
-      lastPingAt: { gt: since },
-      ...(courseId ? { courseId } : {}),
-    },
+    where: activeWhere({ deviceId, ...(courseId ? { courseId } : {}) }),
     orderBy: { startedAt: "desc" },
   });
 }

@@ -5,6 +5,7 @@ import { useTranslations } from "next-intl";
 
 type Status =
   | "unsupported"
+  | "needs-safari-ios"
   | "needs-install-ios"
   | "needs-permission"
   | "denied"
@@ -21,16 +22,31 @@ function urlBase64ToUint8Array(base64: string): Uint8Array {
   return arr;
 }
 
+function isIos(): boolean {
+  if (typeof window === "undefined") return false;
+  return /iPad|iPhone|iPod/.test(navigator.userAgent) && !("MSStream" in window);
+}
+
+/**
+ * On iOS every browser is a WebKit shell, but only Safari can install a
+ * proper PWA that unlocks push permission. Chrome (CriOS), Firefox (FxiOS)
+ * and Edge (EdgiOS) can offer an "Add to Home Screen" that only creates a
+ * browser bookmark — following that flow leads to an installed shortcut
+ * that can never subscribe to push. Detect them so we can tell the user
+ * to switch to Safari instead of walking them through a dead end.
+ */
+function isNonSafariIosBrowser(): boolean {
+  if (!isIos()) return false;
+  return /CriOS|FxiOS|EdgiOS|OPiOS|YaBrowser/.test(navigator.userAgent);
+}
+
 /**
  * Detects iOS Safari that hasn't been installed to home screen yet. Push on
  * iOS requires the site to be launched from the home-screen icon; requesting
  * notification permission from a normal Safari tab silently fails.
  */
 function isIosNeedingInstall(): boolean {
-  if (typeof window === "undefined") return false;
-  const ua = navigator.userAgent;
-  const isIos = /iPad|iPhone|iPod/.test(ua) && !("MSStream" in window);
-  if (!isIos) return false;
+  if (!isIos()) return false;
   const displayMode =
     "standalone" in navigator && (navigator as unknown as { standalone: boolean }).standalone;
   // matchMedia is more reliable across newer iOS
@@ -50,9 +66,13 @@ export function PushSetup({
 
   const computeStatus = useCallback(async (): Promise<Status> => {
     if (typeof window === "undefined") return "unsupported";
+    // Chrome / Firefox / Edge on iOS: they'll happily offer "Add to Home
+    // Screen" that leads nowhere. Steer the user to Safari before anything
+    // else — everything past this point assumes push can eventually work.
+    if (isNonSafariIosBrowser()) return "needs-safari-ios";
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
-      // Older iOS Safari (< 16.4) or unsupported browser.
-      if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+      // Older iOS Safari (< 16.4) or genuinely unsupported browser.
+      if (isIos()) {
         return isIosNeedingInstall() ? "needs-install-ios" : "unsupported";
       }
       return "unsupported";
@@ -166,6 +186,13 @@ export function PushSetup({
   if (status === "unsupported") {
     // Silent — no notification support at all. Don't clutter the UI.
     return null;
+  }
+  if (status === "needs-safari-ios") {
+    return wrap(
+      <span className="text-neutral-700 dark:text-neutral-200">
+        🧭 {t("iosNeedsSafari")}
+      </span>,
+    );
   }
   if (status === "needs-install-ios") {
     return wrap(

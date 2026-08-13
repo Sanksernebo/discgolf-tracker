@@ -32,12 +32,17 @@ export async function POST(req: Request) {
   // If already active on this course, refresh the ping and — if the client
   // is telling us — update the party size too. Lets +/- UI operate against
   // the same endpoint with no separate PATCH.
+  //
+  // "Active" here includes the hard cap on startedAt: an old session that
+  // has aged out (even if it kept pinging) is treated as non-existing so we
+  // create a fresh row instead of extending a session that should be dead.
   const existing = await prisma.checkIn.findFirst({
     where: {
       deviceId,
       courseId,
       endedAt: null,
       lastPingAt: { gt: since },
+      startedAt: { gt: since },
     },
   });
 
