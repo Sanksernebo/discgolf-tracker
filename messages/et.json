@@ -3,6 +3,9 @@
     "title": "Discgolfi jälgija",
     "tagline": "Vaata radu, ilma ja liiklust enne mängima minekut"
   },
+  "home": {
+    "currentlyAt": "Praegu rajal"
+  },
   "nav": {
     "primary": "Peamenüü",
     "home": "Kaart",

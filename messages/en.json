@@ -3,6 +3,9 @@
     "title": "Disc Golf Tracker",
     "tagline": "See courses, weather and live traffic before heading out"
   },
+  "home": {
+    "currentlyAt": "Currently on course"
+  },
   "nav": {
     "primary": "Primary",
     "home": "Map",

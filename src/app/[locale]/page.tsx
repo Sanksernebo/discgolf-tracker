@@ -2,6 +2,7 @@ import { setRequestLocale, getTranslations } from "next-intl/server";
 import { prisma } from "@/lib/prisma";
 import { getActiveCountsByCourse } from "@/lib/traffic";
 import { EstoniaMap } from "@/components/map/EstoniaMap";
+import { ActiveCheckInBanner } from "@/components/ActiveCheckInBanner";
 import { ESTONIAN_COUNTIES } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -50,6 +51,7 @@ export default async function HomePage({
         <h1 className="text-2xl font-semibold">{t("app.title")}</h1>
         <p className="text-sm text-neutral-500">{t("app.tagline")}</p>
       </div>
+      <ActiveCheckInBanner locale={locale} />
       <EstoniaMap courses={coursesForMap} locale={locale} />
     </div>
   );
