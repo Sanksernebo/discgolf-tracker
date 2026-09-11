@@ -66,9 +66,16 @@ export async function sendPushToDevice(
             ? (err as { statusCode: number }).statusCode
             : undefined;
         if (status === 404 || status === 410) {
-          // Subscription is dead; remove so we don't keep retrying.
-          await prisma.pushSubscription.delete({ where: { id: s.id } });
-          removed += 1;
+          // Subscription is dead; remove so we don't keep retrying. A
+          // concurrent send for the same row may have already deleted it
+          // (Prisma P2025) — swallow that so one racing delete doesn't
+          // reject the whole Promise.all and abort the rest of the batch.
+          try {
+            await prisma.pushSubscription.delete({ where: { id: s.id } });
+            removed += 1;
+          } catch {
+            /* row already gone — treat as success */
+          }
         } else {
           // Unknown transient failure — log and move on.
           console.warn("push send failed:", status, err);

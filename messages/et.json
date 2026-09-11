@@ -4,7 +4,15 @@
     "tagline": "Vaata radu, ilma ja liiklust enne mängima minekut"
   },
   "home": {
-    "currentlyAt": "Praegu rajal"
+    "currentlyAt": "Praegu rajal",
+    "jumpToSession": "Mine tagasi rajale {name}"
+  },
+  "legend": {
+    "label": "Rajaliiklus",
+    "free": "Vaba",
+    "light": "1–2 mängijat",
+    "moderate": "3–5 mängijat",
+    "busy": "6+ mängijat"
   },
   "nav": {
     "primary": "Peamenüü",
@@ -80,7 +88,7 @@
     "checkOut": "Lõpeta mäng",
     "partySize": "Mängijate arv grupis",
     "partySizeHelp": "Kui skänneerid QR-koodi terve grupi eest, siis vali kui palju mängijaid grupis on",
-    "partyOf": "{count, plural, =1 {Sina üksi} =2 {Sina + 1 mängija} other {Sina + # mängijat}}",
+    "partyOf": "{count, plural, offset:1 =1 {Sina üksi} =2 {Sina + 1 mängija} other {Sina + # mängijat}}",
     "addPlayer": "Lisa mängija",
     "removePlayer": "Eemalda mängija",
     "youAreHere": "Sa oled märgitud sellele rajale",

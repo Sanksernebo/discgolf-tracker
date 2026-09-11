@@ -3,6 +3,8 @@ import { prisma } from "@/lib/prisma";
 import { getActiveCountsByCourse } from "@/lib/traffic";
 import { EstoniaMap } from "@/components/map/EstoniaMap";
 import { ActiveCheckInBanner } from "@/components/ActiveCheckInBanner";
+import { JumpToCheckInShortcut } from "@/components/JumpToCheckInShortcut";
+import { TrafficLegend } from "@/components/map/TrafficLegend";
 import { ESTONIAN_COUNTIES } from "@/lib/constants";
 
 export const dynamic = "force-dynamic";
@@ -53,6 +55,8 @@ export default async function HomePage({
       </div>
       <ActiveCheckInBanner locale={locale} />
       <EstoniaMap courses={coursesForMap} locale={locale} />
+      <JumpToCheckInShortcut locale={locale} />
+      <TrafficLegend />
     </div>
   );
 }

@@ -4,7 +4,15 @@
     "tagline": "See courses, weather and live traffic before heading out"
   },
   "home": {
-    "currentlyAt": "Currently on course"
+    "currentlyAt": "Currently on course",
+    "jumpToSession": "Jump back to {name}"
+  },
+  "legend": {
+    "label": "Course traffic",
+    "free": "Free",
+    "light": "1–2 players",
+    "moderate": "3–5 players",
+    "busy": "6+ players"
   },
   "nav": {
     "primary": "Primary",
@@ -80,7 +88,7 @@
     "checkOut": "End round",
     "partySize": "Players in your group",
     "partySizeHelp": "If you're scanning the QR for a whole group, pick how many players are with you",
-    "partyOf": "{count, plural, =1 {Just you} =2 {You + 1 player} other {You + # players}}",
+    "partyOf": "{count, plural, offset:1 =1 {Just you} =2 {You + 1 player} other {You + # players}}",
     "addPlayer": "Add player",
     "removePlayer": "Remove player",
     "youAreHere": "You are marked on this course",
