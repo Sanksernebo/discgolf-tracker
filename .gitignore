@@ -53,4 +53,3 @@ next-env.d.ts
 
 # Local tooling artefacts
 skills-lock.json
-prisma.config.ts
