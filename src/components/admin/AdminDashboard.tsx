@@ -6,6 +6,7 @@ import { useRouter } from "@/i18n/navigation";
 import { CourseEditor, type CourseWithHoles } from "./CourseEditor";
 import { CourseQr } from "./CourseQr";
 import { AdminUsers } from "./AdminUsers";
+import { AdminAnalytics } from "./AdminAnalytics";
 import { ESTONIAN_COUNTIES } from "@/lib/constants";
 
 type Issue = {
@@ -25,7 +26,7 @@ type Me = {
   courseIds: string[];
 };
 
-type Tab = "courses" | "issues" | "users";
+type Tab = "courses" | "analytics" | "issues" | "users";
 
 export function AdminDashboard() {
   const t = useTranslations("admin");
@@ -91,8 +92,8 @@ export function AdminDashboard() {
 
   const openIssueCount = issues.filter((i) => i.status === "open").length;
   const availableTabs: Tab[] = isSuperuser
-    ? ["courses", "issues", "users"]
-    : ["courses", "issues"];
+    ? ["courses", "analytics", "issues", "users"]
+    : ["courses", "analytics", "issues"];
 
   return (
     <div className="flex flex-col gap-4">
@@ -269,6 +270,17 @@ export function AdminDashboard() {
             ))
           )}
         </div>
+      )}
+
+      {!loading && tab === "analytics" && me && (
+        <AdminAnalytics
+          courses={courses.map((c) => ({
+            id: c.id,
+            nameEt: c.nameEt,
+            nameEn: c.nameEn,
+          }))}
+          scope={isSuperuser ? "superuser" : "courseAdmin"}
+        />
       )}
 
       {!loading && tab === "users" && isSuperuser && me && (

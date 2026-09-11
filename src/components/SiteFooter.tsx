@@ -1,7 +1,8 @@
-import { getTranslations } from "next-intl/server";
+import { getTranslations, getLocale } from "next-intl/server";
 
 export async function SiteFooter() {
   const t = await getTranslations("footer");
+  const locale = await getLocale();
   const donate =
     process.env.NEXT_PUBLIC_DONATE_URL ??
     "https://buymeacoffee.com/digiarendus";
@@ -20,6 +21,12 @@ export async function SiteFooter() {
             className="hover:text-emerald-600 focus:outline-none underline-offset-2 hover:underline"
           >
             info@digiarendus.ee
+          </a>
+          <a
+            href={`/${locale}/privacy`}
+            className="hover:text-emerald-600 focus:outline-none underline-offset-2 hover:underline"
+          >
+            {t("privacy")}
           </a>
         </div>
         <a
