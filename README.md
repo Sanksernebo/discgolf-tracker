@@ -185,7 +185,7 @@ account and signs you in. From then on:
 | `DATABASE_URL`           | `mysql://discgolf:dev@localhost:3306/discgolf`| MySQL connection string. In production, use the one from your Zone control panel.                  |
 | `ADMIN_PASSWORD`         | `admin123`                                    | Bootstrap password for the first-ever superuser login **and** the HMAC secret for admin sessions.  |
 | `SUPERUSER_EMAIL`        | `admin@local`                                 | Email of the superuser account that gets created on first login.                                   |
-| `NEXT_PUBLIC_APP_URL`    | *(derived from X-Forwarded-Host)*             | Public base URL. Used to build QR codes and the `/checkin/<id>` redirect. Set explicitly in production to survive proxy quirks. |
+| `NEXT_PUBLIC_APP_URL`    | *(derived from X-Forwarded-Host)*             | Legacy override. QR codes now use the admin's browser origin and `/checkin/<id>` redirects use `X-Forwarded-Host`, so this is only read as a last-resort fallback when no request headers are available (e.g. a Node script). Leaving it unset is safe. |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | *(empty; push disabled)*                | VAPID public key. Browser reads this to subscribe. Generate with `node scripts/generate-vapid.mjs`. |
 | `VAPID_PRIVATE_KEY`      | *(empty; push disabled)*                      | VAPID private key. Server-only. Rotating it invalidates every push subscription. |
 | `VAPID_CONTACT`          | `mailto:info@digiarendus.ee`                  | Contact URL sent to push services in case of problems.                                             |
