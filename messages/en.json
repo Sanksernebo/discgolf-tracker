@@ -4,8 +4,7 @@
     "tagline": "See courses, weather and live traffic before heading out"
   },
   "home": {
-    "currentlyAt": "Currently on course",
-    "jumpToSession": "Jump back to {name}"
+    "currentlyAt": "Currently on course"
   },
   "legend": {
     "label": "Course traffic",
