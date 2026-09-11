@@ -16,12 +16,24 @@ export function CourseQr({
   const [origin, setOrigin] = useState("");
 
   useEffect(() => {
-    // NEXT_PUBLIC_APP_URL wins if set at build time — this is what an admin
-    // should configure in production so a printed QR always points at the
-    // real public URL regardless of how they happened to open the admin
-    // panel. Otherwise fall back to the browser's current origin.
+    // Always trust the browser origin the admin is viewing the panel from:
+    // by definition that IS the public URL end users will scan into, and it
+    // survives moving the app between subdomains (e.g. digiarendus.ee →
+    // disctracker.digiarendus.ee) without a rebuild.
+    //
+    // NEXT_PUBLIC_APP_URL used to win here as a "production override" but
+    // that turned into a footgun — a stale build-time value silently
+    // produced QRs pointing at the wrong domain (real bug: env said
+    // `digiarendus.ee` while the app was actually at
+    // `disctracker.digiarendus.ee`, so every printed QR 404ed). Kept only
+    // as a last-resort fallback for the impossible-in-a-client-component
+    // case where `window` isn't available.
+    if (typeof window !== "undefined") {
+      setOrigin(window.location.origin.replace(/\/$/, ""));
+      return;
+    }
     const explicit = process.env.NEXT_PUBLIC_APP_URL;
-    setOrigin((explicit ?? window.location.origin).replace(/\/$/, ""));
+    if (explicit) setOrigin(explicit.replace(/\/$/, ""));
   }, []);
 
   const url = origin ? `${origin}/checkin/${course.id}` : "";
