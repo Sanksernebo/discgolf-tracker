@@ -4,8 +4,7 @@
     "tagline": "Vaata radu, ilma ja liiklust enne mängima minekut"
   },
   "home": {
-    "currentlyAt": "Praegu rajal",
-    "jumpToSession": "Mine tagasi rajale {name}"
+    "currentlyAt": "Praegu rajal"
   },
   "legend": {
     "label": "Rajaliiklus",
