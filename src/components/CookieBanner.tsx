@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useLocale, useTranslations } from "next-intl";
 
 const STORAGE_KEY = "cookie-ack-v1";
 
 export function CookieBanner() {
   const t = useTranslations("cookies");
+  const locale = useLocale();
   const [visible, setVisible] = useState(false);
   const [expanded, setExpanded] = useState(false);
 
@@ -55,17 +56,25 @@ export function CookieBanner() {
                 <li>{t("detailTheme")}</li>
                 <li>{t("detailAdmin")}</li>
                 <li>{t("detailOsm")}</li>
-                <li>{t("noTracking")}</li>
+                <li>{t("firstPartyAnalytics")}</li>
               </ul>
             )}
-            <button
-              type="button"
-              onClick={() => setExpanded((v) => !v)}
-              className="text-xs mt-2 text-emerald-600 hover:underline focus:outline-none"
-              aria-expanded={expanded}
-            >
-              {expanded ? t("less") : t("more")}
-            </button>
+            <div className="flex flex-wrap gap-3 mt-2 text-xs">
+              <button
+                type="button"
+                onClick={() => setExpanded((v) => !v)}
+                className="text-emerald-600 hover:underline focus:outline-none"
+                aria-expanded={expanded}
+              >
+                {expanded ? t("less") : t("more")}
+              </button>
+              <a
+                href={`/${locale}/privacy`}
+                className="text-emerald-600 hover:underline focus:outline-none"
+              >
+                {t("privacyLink")}
+              </a>
+            </div>
           </div>
         </div>
         <div className="flex justify-end">

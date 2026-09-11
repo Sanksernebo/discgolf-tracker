@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "seed": "tsx prisma/seed.ts",
+    "seed:analytics-demo": "tsx scripts/seed-analytics-demo.ts",
     "test": "vitest run",
     "test:watch": "vitest"
   },
