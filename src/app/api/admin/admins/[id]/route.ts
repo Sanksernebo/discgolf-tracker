@@ -40,6 +40,22 @@ export async function PUT(
   }
   const { email, password, role, courseIds } = parsed.data;
 
+  // Guard email collisions before hitting the DB unique constraint so the
+  // client gets the same 409 `email_taken` shape as the POST endpoint (which
+  // AdminEditor already knows how to surface). Skipping this check would
+  // bubble a P2002 up as a raw 500.
+  if (email) {
+    const normalised = email.trim().toLowerCase();
+    if (normalised !== target.email) {
+      const clash = await prisma.admin.findUnique({
+        where: { email: normalised },
+      });
+      if (clash && clash.id !== id) {
+        return NextResponse.json({ error: "email_taken" }, { status: 409 });
+      }
+    }
+  }
+
   // Don't let a superuser demote or delete themselves out of the last
   // superuser slot — that would lock everyone out.
   const nextRole = role ?? target.role;

@@ -2,11 +2,19 @@
 
 import "leaflet/dist/leaflet.css";
 import { useMemo, useCallback, useEffect } from "react";
-import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from "react-leaflet";
+import {
+  MapContainer,
+  TileLayer,
+  CircleMarker,
+  Popup,
+  Tooltip,
+  useMap,
+} from "react-leaflet";
 import { useSearchParams } from "next/navigation";
 import { useRouter, usePathname } from "@/i18n/navigation";
 import { useTranslations } from "next-intl";
 import { ESTONIAN_COUNTIES } from "@/lib/constants";
+import { colorForTraffic } from "@/lib/traffic-colors";
 import type { CourseMarker } from "./EstoniaMap";
 
 const ESTONIA_CENTER: [number, number] = [58.7, 25.5];
@@ -25,13 +33,6 @@ function ViewController({
     map.flyTo(target, zoom, { duration: 0.6 });
   }, [map, target, zoom]);
   return null;
-}
-
-function colorForTraffic(count: number): string {
-  if (count === 0) return "#10b981"; // emerald-500
-  if (count <= 2) return "#f59e0b"; // amber-500
-  if (count <= 5) return "#f97316"; // orange-500
-  return "#ef4444"; // red-500
 }
 
 export default function MapInner({
@@ -152,6 +153,16 @@ export default function MapInner({
                     click: () => setSelectedCounty(c.key),
                   }}
                 >
+                  {/* Permanent centered label with the total active player
+                      count across the county, so users don't have to decode
+                      the bubble color to know how busy it is. */}
+                  <Tooltip
+                    permanent
+                    direction="center"
+                    className="map-count-badge"
+                  >
+                    {c.active}
+                  </Tooltip>
                   <Popup>
                     <div className="text-sm">
                       <div className="font-semibold">{c.label}</div>
@@ -193,6 +204,15 @@ export default function MapInner({
                     click: () => router.push(`/course/${c.id}`),
                   }}
                 >
+                  {/* Same as county view: exact player count on the bubble,
+                      so the color is a redundant cue rather than the only one. */}
+                  <Tooltip
+                    permanent
+                    direction="center"
+                    className="map-count-badge"
+                  >
+                    {c.activeCount}
+                  </Tooltip>
                   <Popup>
                     <div className="text-sm">
                       <div className="font-semibold">{c.name}</div>
