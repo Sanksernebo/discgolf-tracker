@@ -3,7 +3,18 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocale, useTranslations } from "next-intl";
 
-type Range = "day" | "week" | "month" | "year" | "all";
+type Range = "day" | "week" | "month" | "year" | "all" | "custom";
+
+/** Local "YYYY-MM-DD" for a date input, `daysAgo` days before today. */
+function isoDay(daysAgo = 0): string {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return [
+    d.getFullYear(),
+    String(d.getMonth() + 1).padStart(2, "0"),
+    String(d.getDate()).padStart(2, "0"),
+  ].join("-");
+}
 
 type CourseOption = { id: string; nameEt: string; nameEn: string };
 
@@ -73,17 +84,28 @@ export function AdminAnalytics({
   const [courseId, setCourseId] = useState<string>(() =>
     singleCourseAdmin ? courses[0].id : "",
   );
+  const [customFrom, setCustomFrom] = useState(() => isoDay(6));
+  const [customTo, setCustomTo] = useState(() => isoDay());
   const [data, setData] = useState<Analytics | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Both inputs filled and in order; otherwise skip fetching and show a hint.
+  const customValid =
+    customFrom !== "" && customTo !== "" && customFrom <= customTo;
+
   useEffect(() => {
+    if (range === "custom" && !customValid) return;
     const controller = new AbortController();
     async function load() {
       setLoading(true);
       setError(null);
       try {
         const params = new URLSearchParams({ range });
+        if (range === "custom") {
+          params.set("from", customFrom);
+          params.set("to", customTo);
+        }
         if (courseId) params.set("courseId", courseId);
         const r = await fetch(`/api/admin/analytics?${params.toString()}`, {
           signal: controller.signal,
@@ -99,12 +121,12 @@ export function AdminAnalytics({
     }
     load();
     return () => controller.abort();
-  }, [range, courseId]);
+  }, [range, courseId, customFrom, customTo, customValid]);
 
   const courseName = (c: CourseOption) =>
     locale === "en" ? c.nameEn : c.nameEt;
 
-  const ranges: Range[] = ["day", "week", "month", "year", "all"];
+  const ranges: Range[] = ["day", "week", "month", "year", "all", "custom"];
 
   return (
     <div className="flex flex-col gap-4">
@@ -130,6 +152,23 @@ export function AdminAnalytics({
           </div>
         </label>
 
+        {range === "custom" && (
+          <>
+            <DateField
+              label={t("analyticsFrom")}
+              value={customFrom}
+              max={customTo || undefined}
+              onChange={setCustomFrom}
+            />
+            <DateField
+              label={t("analyticsTo")}
+              value={customTo}
+              min={customFrom || undefined}
+              onChange={setCustomTo}
+            />
+          </>
+        )}
+
         <label className="flex flex-col text-xs text-neutral-500">
           {t("analyticsCourse")}
           <select
@@ -152,6 +191,9 @@ export function AdminAnalytics({
         </label>
       </div>
 
+      {range === "custom" && !customValid && (
+        <div className="text-sm text-red-600">{t("analyticsInvalidRange")}</div>
+      )}
       {loading && !data && (
         <div className="text-sm text-neutral-500">{t("analyticsLoading")}</div>
       )}
@@ -381,6 +423,34 @@ function SummaryCard({
         <div className="mt-1 text-xs text-neutral-500 truncate">{hint}</div>
       )}
     </div>
+  );
+}
+
+function DateField({
+  label,
+  value,
+  min,
+  max,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  min?: string;
+  max?: string;
+  onChange: (value: string) => void;
+}) {
+  return (
+    <label className="flex flex-col text-xs text-neutral-500">
+      {label}
+      <input
+        type="date"
+        className="mt-1 h-11 rounded-full border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 text-sm"
+        value={value}
+        min={min}
+        max={max}
+        onChange={(e) => onChange(e.target.value)}
+      />
+    </label>
   );
 }
 
