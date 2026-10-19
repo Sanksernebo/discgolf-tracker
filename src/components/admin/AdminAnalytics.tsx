@@ -410,6 +410,41 @@ function Panel({
 /*                                   Charts                                   */
 /* -------------------------------------------------------------------------- */
 
+/**
+ * Always-visible numeric label for a chart mark. Zero values are skipped so
+ * empty buckets don't clutter the chart; the axis already conveys zero.
+ * `pointerEvents="none"` keeps the underlying mark's hover <title> working.
+ */
+function ValueLabel({
+  x,
+  y,
+  value,
+  inverse = false,
+}: {
+  x: number;
+  y: number;
+  value: number;
+  /** Render light text for use on top of a dark/saturated fill. */
+  inverse?: boolean;
+}) {
+  if (value === 0) return null;
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      fontSize={9}
+      fontWeight={500}
+      fill={inverse ? "white" : "currentColor"}
+      fillOpacity={inverse ? 1 : 0.75}
+      pointerEvents="none"
+      className="tabular-nums"
+    >
+      {value}
+    </text>
+  );
+}
+
 function DailyChart({
   data,
   dateFmt,
@@ -419,7 +454,7 @@ function DailyChart({
 }) {
   const width = Math.max(320, data.length * 22);
   const height = 200;
-  const pad = { top: 12, right: 12, bottom: 28, left: 32 };
+  const pad = { top: 20, right: 12, bottom: 28, left: 32 };
   const w = width - pad.left - pad.right;
   const h = height - pad.top - pad.bottom;
   const max = Math.max(1, ...data.map((d) => d.players));
@@ -473,11 +508,14 @@ function DailyChart({
         strokeWidth={2}
       />
       {points.map((p, i) => (
-        <circle key={i} cx={p.x} cy={p.y} r={2.5} fill="rgb(16 185 129)">
-          <title>
-            {p.d.date}: {p.d.players} players ({p.d.checkIns} check-ins)
-          </title>
-        </circle>
+        <g key={i}>
+          <circle cx={p.x} cy={p.y} r={2.5} fill="rgb(16 185 129)">
+            <title>
+              {p.d.date}: {p.d.players} players ({p.d.checkIns} check-ins)
+            </title>
+          </circle>
+          <ValueLabel x={p.x} y={p.y - 6} value={p.d.players} />
+        </g>
       ))}
       {/* X-axis labels */}
       {points.map((p, i) =>
@@ -523,7 +561,7 @@ function DailyChart({
 function HourChart({ data }: { data: Analytics["hourly"] }) {
   const width = 24 * 22;
   const height = 180;
-  const pad = { top: 12, right: 8, bottom: 24, left: 24 };
+  const pad = { top: 18, right: 8, bottom: 24, left: 24 };
   const w = width - pad.left - pad.right;
   const h = height - pad.top - pad.bottom;
   const max = Math.max(1, ...data.map((d) => d.players));
@@ -557,6 +595,7 @@ function HourChart({ data }: { data: Analytics["hourly"] }) {
                 {d.hour.toString().padStart(2, "0")}:00 — {d.players} players
               </title>
             </rect>
+            <ValueLabel x={x + barW / 2} y={y - 4} value={d.players} />
             {d.hour % 3 === 0 && (
               <text
                 x={x + barW / 2}
@@ -585,7 +624,7 @@ function WeekdayChart({
 }) {
   const width = 7 * 44;
   const height = 180;
-  const pad = { top: 12, right: 8, bottom: 24, left: 24 };
+  const pad = { top: 18, right: 8, bottom: 24, left: 24 };
   const w = width - pad.left - pad.right;
   const h = height - pad.top - pad.bottom;
   const max = Math.max(1, ...data.map((d) => d.players));
@@ -620,6 +659,7 @@ function WeekdayChart({
                 {labels[d.weekday]} — {d.players} players
               </title>
             </rect>
+            <ValueLabel x={x + barW / 2} y={y - 4} value={d.players} />
             <text
               x={pad.left + slot * d.weekday + slot / 2}
               y={height - 8}
@@ -707,21 +747,28 @@ function HeatmapChart({
         // a faint tint so the grid stays legible.
         const opacity = cell.players === 0 ? 0.08 : 0.15 + intensity * 0.75;
         return (
-          <rect
-            key={`${cell.weekday}-${cell.hour}`}
-            x={x + 1}
-            y={y + 1}
-            width={cellW - 2}
-            height={cellH - 2}
-            rx={3}
-            fill="rgb(16 185 129)"
-            fillOpacity={opacity}
-          >
-            <title>
-              {labels[cell.weekday]} {cell.hour.toString().padStart(2, "0")}:00
-              {" "}— {cell.players} players ({cell.checkIns} check-ins)
-            </title>
-          </rect>
+          <g key={`${cell.weekday}-${cell.hour}`}>
+            <rect
+              x={x + 1}
+              y={y + 1}
+              width={cellW - 2}
+              height={cellH - 2}
+              rx={3}
+              fill="rgb(16 185 129)"
+              fillOpacity={opacity}
+            >
+              <title>
+                {labels[cell.weekday]}{" "}
+                {cell.hour.toString().padStart(2, "0")}:00 — {cell.players} players ({cell.checkIns} check-ins)
+              </title>
+            </rect>
+            <ValueLabel
+              x={x + cellW / 2}
+              y={y + cellH / 2 + 3}
+              value={cell.players}
+              inverse={intensity > 0.6}
+            />
+          </g>
         );
       })}
     </svg>
