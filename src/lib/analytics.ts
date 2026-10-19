@@ -185,6 +185,59 @@ export function resolveRange(
   return { from, to };
 }
 
+const ISO_DAY = /^\d{4}-\d{2}-\d{2}$/;
+
+/** UTC instant of 00:00 Tallinn time on the given "YYYY-MM-DD" day. */
+function localMidnight(day: string): Date {
+  const utcGuess = new Date(`${day}T00:00:00Z`);
+  // Tallinn's UTC offset at that instant: render the instant as Tallinn wall
+  // time, read it back as if it were UTC, and diff. DST switches happen at
+  // 03:00/04:00 local, so midnight is never ambiguous.
+  const wall = new Date(
+    new Intl.DateTimeFormat("sv-SE", {
+      timeZone: TZ,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    })
+      .format(utcGuess)
+      .replace(" ", "T") + "Z",
+  );
+  return new Date(utcGuess.getTime() - (wall.getTime() - utcGuess.getTime()));
+}
+
+/** "YYYY-MM-DD" that names a real calendar day (rejects e.g. 2026-02-30). */
+function isCalendarDay(day: string): boolean {
+  if (!ISO_DAY.test(day)) return false;
+  const d = new Date(`${day}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().startsWith(day);
+}
+
+function nextDay(day: string): string {
+  const d = new Date(`${day}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + 1);
+  return d.toISOString().slice(0, 10);
+}
+
+/**
+ * Inclusive Tallinn-local day range → [from, to] instants. Returns `null`
+ * for malformed days or when `fromDay` is after `toDay`.
+ */
+export function resolveCustomRange(
+  fromDay: string,
+  toDay: string,
+): { from: Date; to: Date } | null {
+  if (!isCalendarDay(fromDay) || !isCalendarDay(toDay)) return null;
+  if (fromDay > toDay) return null;
+  return {
+    from: localMidnight(fromDay),
+    to: new Date(localMidnight(nextDay(toDay)).getTime() - 1),
+  };
+}
+
 /* -------------------------------------------------------------------------- */
 /*                                 Main entry                                 */
 /* -------------------------------------------------------------------------- */

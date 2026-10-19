@@ -2,7 +2,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 import { makeCookieStore, jsonRequest, seedCourse } from "../helpers";
 import { prisma } from "@/lib/prisma";
 import { hashPassword, ROLE_COURSE_ADMIN } from "@/lib/admin";
-import { buildAnalytics, localDay, previousRange } from "@/lib/analytics";
+import {
+  buildAnalytics,
+  localDay,
+  previousRange,
+  resolveCustomRange,
+} from "@/lib/analytics";
 
 const cookieStore = { current: makeCookieStore() };
 vi.mock("next/headers", () => ({
@@ -165,6 +170,19 @@ describe("buildAnalytics", () => {
     const prev = previousRange(from, to);
     expect(prev.to.toISOString()).toBe(from.toISOString());
     expect(prev.from.toISOString()).toBe("2026-09-01T00:00:00.000Z");
+  });
+
+  it("resolveCustomRange spans whole Tallinn-local days, DST-aware", () => {
+    // Summer (UTC+3) start, winter (UTC+2) end.
+    const r = resolveCustomRange("2026-09-01", "2026-11-01");
+    expect(r?.from.toISOString()).toBe("2026-08-31T21:00:00.000Z");
+    expect(r?.to.toISOString()).toBe("2026-11-01T21:59:59.999Z");
+  });
+
+  it("resolveCustomRange rejects malformed, impossible and reversed days", () => {
+    expect(resolveCustomRange("2026-9-1", "2026-09-02")).toBeNull();
+    expect(resolveCustomRange("2026-02-30", "2026-03-01")).toBeNull();
+    expect(resolveCustomRange("2026-09-02", "2026-09-01")).toBeNull();
   });
 
   it("bins into Tallinn-local hour and weekday", () => {
@@ -353,5 +371,55 @@ describe("GET /api/admin/analytics", () => {
     expect(res.status).toBe(200);
     expect(body.summary.checkIns).toBe(0);
     expect(body.summary.players).toBe(0);
+  });
+
+  it("custom range only counts check-ins inside the chosen days", async () => {
+    await loginAsSuperuser();
+    const c1 = await seedCourse({ nameEt: "A" });
+    await prisma.checkIn.createMany({
+      data: [
+        // 2026-06-10 12:00 Tallinn — inside.
+        {
+          courseId: c1,
+          deviceId: "d1",
+          partySize: 2,
+          startedAt: new Date("2026-06-10T09:00:00Z"),
+          lastPingAt: new Date("2026-06-10T09:00:00Z"),
+        },
+        // 2026-06-11 00:30 Tallinn — the day after, outside.
+        {
+          courseId: c1,
+          deviceId: "d2",
+          partySize: 5,
+          startedAt: new Date("2026-06-10T21:30:00Z"),
+          lastPingAt: new Date("2026-06-10T21:30:00Z"),
+        },
+      ],
+    });
+    const { GET } = await import("@/app/api/admin/analytics/route");
+    const res = await GET(
+      new Request(
+        "http://x/api/admin/analytics?range=custom&from=2026-06-10&to=2026-06-10",
+      ),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.range).toBe("custom");
+    expect(body.summary.players).toBe(2);
+  });
+
+  it("custom range with missing or reversed dates 400s", async () => {
+    await loginAsSuperuser();
+    const { GET } = await import("@/app/api/admin/analytics/route");
+    const missing = await GET(
+      new Request("http://x/api/admin/analytics?range=custom"),
+    );
+    const reversed = await GET(
+      new Request(
+        "http://x/api/admin/analytics?range=custom&from=2026-06-10&to=2026-06-01",
+      ),
+    );
+    expect(missing.status).toBe(400);
+    expect(reversed.status).toBe(400);
   });
 });
