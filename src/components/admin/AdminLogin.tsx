@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useTranslations } from "next-intl";
-import { useRouter } from "@/i18n/navigation";
+import { Link, useRouter } from "@/i18n/navigation";
 
 export function AdminLogin() {
   const t = useTranslations("admin");
@@ -49,7 +49,15 @@ export function AdminLogin() {
           />
         </label>
         <label className="flex flex-col gap-1 text-sm">
-          <span className="text-neutral-500">{t("password")}</span>
+          <span className="flex items-center justify-between gap-2">
+            <span className="text-neutral-500">{t("password")}</span>
+            <Link
+              href="/admin/forgot-password"
+              className="text-emerald-700 dark:text-emerald-400 hover:underline"
+            >
+              {t("forgotPassword")}
+            </Link>
+          </span>
           <input
             type="password"
             value={password}
