@@ -22,6 +22,7 @@ type Issue = {
 type Me = {
   id: string;
   email: string;
+  name: string | null;
   role: "superuser" | "courseAdmin";
   courseIds: string[];
 };
@@ -69,11 +70,6 @@ export function AdminDashboard() {
 
   const isSuperuser = me?.role === "superuser";
 
-  async function signOut() {
-    await fetch("/api/admin/logout", { method: "POST" });
-    router.refresh();
-  }
-
   async function deleteCourse(c: CourseWithHoles) {
     if (!confirm(t("confirmDelete"))) return;
     const res = await fetch(`/api/admin/courses/${c.id}`, { method: "DELETE" });
@@ -103,7 +99,7 @@ export function AdminDashboard() {
           {me && (
             <div className="text-xs text-neutral-500 mt-1">
               {t("signedInAs", {
-                email: me.email,
+                email: me.name ? `${me.name} <${me.email}>` : me.email,
                 role:
                   me.role === "superuser"
                     ? t("roleSuperuser")
@@ -112,13 +108,6 @@ export function AdminDashboard() {
             </div>
           )}
         </div>
-        <button
-          type="button"
-          onClick={signOut}
-          className="text-sm px-3 py-1.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition min-h-11"
-        >
-          {t("signOut")}
-        </button>
       </div>
 
       <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">

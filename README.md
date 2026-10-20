@@ -173,6 +173,11 @@ account and signs you in. From then on:
 - Course admins log in with the email + password the superuser set for them.
 - `ADMIN_PASSWORD` continues to be used to sign session cookies, so rotating
   it invalidates every outstanding session.
+- Admins who forget their password can use **Forgot password?** on the login
+  form to get a one-hour reset link by email (needs the `SMTP_*` variables).
+- Every successful sign-in is logged; superusers see each admin's last login
+  and full history (time, IP, browser) in the Users tab. History older than
+  12 months is pruned automatically.
 
 **Change `ADMIN_PASSWORD` before deploying anywhere.**
 
@@ -189,6 +194,11 @@ account and signs you in. From then on:
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | *(empty; push disabled)*                | VAPID public key. Browser reads this to subscribe. Generate with `node scripts/generate-vapid.mjs`. |
 | `VAPID_PRIVATE_KEY`      | *(empty; push disabled)*                      | VAPID private key. Server-only. Rotating it invalidates every push subscription. |
 | `VAPID_CONTACT`          | `mailto:info@digiarendus.ee`                  | Contact URL sent to push services in case of problems.                                             |
+| `APP_URL`                | *(derived from request headers)*              | Server-only public origin (e.g. `https://disctracker.digiarendus.ee`) used for links in password-reset emails. **Set this in production** so a forged `Host` header can't redirect reset links. |
+| `SMTP_HOST`              | *(empty; email disabled)*                     | SMTP server for password-reset emails. When unset, reset links are logged to the server console in dev and not sent at all in production. |
+| `SMTP_PORT`              | `465`                                         | SMTP port. `465` uses implicit TLS; other ports use STARTTLS when offered. |
+| `SMTP_USER` / `SMTP_PASS`| *(empty)*                                     | SMTP credentials. |
+| `MAIL_FROM`              | `SMTP_USER`                                   | From address on outgoing mail, e.g. `"Discgolf <info@digiarendus.ee>"`. |
 | `NEXT_PUBLIC_DONATE_URL` | `https://buymeacoffee.com/digiarendus`        | URL for the "Support the project" footer link.                                                     |
 | `TEST_DATABASE_URL`      | *(vitest.config default)*                     | Optional. Override the URL Vitest uses if you're not running MySQL via the bundled docker-compose. |
 

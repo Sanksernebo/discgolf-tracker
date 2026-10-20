@@ -84,14 +84,48 @@ model IssueReport {
 }
 
 model Admin {
-  id           String   @id @default(cuid())
-  email        String   @unique
+  id           String    @id @default(cuid())
+  email        String    @unique
+  // Display name shown in the header; falls back to email when null.
+  name         String?   @db.VarChar(100)
   passwordHash String
   role         String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  lastLoginAt  DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
-  courses CourseAdmin[]
+  courses     CourseAdmin[]
+  logins      AdminLoginEvent[]
+  resetTokens PasswordResetToken[]
+}
+
+// One row per successful admin sign-in. Pruned after a year (see
+// recordLogin in src/lib/admin.ts).
+model AdminLoginEvent {
+  id        String   @id @default(cuid())
+  adminId   String
+  ip        String?  @db.VarChar(64)
+  userAgent String?  @db.VarChar(300)
+  createdAt DateTime @default(now())
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+}
+
+// Single-use password reset link. Only the SHA-256 of the token is stored,
+// so a DB leak doesn't hand out working reset links.
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  adminId   String
+  tokenHash String    @unique @db.VarChar(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  admin Admin @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
 }
 
 model CourseAdmin {

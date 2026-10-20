@@ -11,6 +11,7 @@ import {
 
 const UpdateBody = z.object({
   email: z.string().email().max(200).optional(),
+  name: z.string().trim().max(100).optional(),
   password: z.string().min(8).max(200).optional(),
   role: z.enum([ROLE_SUPERUSER, ROLE_COURSE_ADMIN]).optional(),
   courseIds: z.array(z.string()).optional(),
@@ -38,7 +39,7 @@ export async function PUT(
       { status: 400 },
     );
   }
-  const { email, password, role, courseIds } = parsed.data;
+  const { email, name, password, role, courseIds } = parsed.data;
 
   // Guard email collisions before hitting the DB unique constraint so the
   // client gets the same 409 `email_taken` shape as the POST endpoint (which
@@ -73,6 +74,7 @@ export async function PUT(
 
   const data: Record<string, unknown> = {};
   if (email) data.email = email.trim().toLowerCase();
+  if (name !== undefined) data.name = name || null;
   if (password) data.passwordHash = hashPassword(password);
   if (role) data.role = role;
 

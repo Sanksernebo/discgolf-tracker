@@ -11,6 +11,7 @@ import {
 
 const CreateBody = z.object({
   email: z.string().email().max(200),
+  name: z.string().trim().max(100).optional(),
   password: z.string().min(8).max(200),
   role: z.enum([ROLE_SUPERUSER, ROLE_COURSE_ADMIN]),
   courseIds: z.array(z.string()).optional(),
@@ -37,8 +38,10 @@ export async function GET() {
     admins: admins.map((a) => ({
       id: a.id,
       email: a.email,
+      name: a.name,
       role: a.role,
       createdAt: a.createdAt,
+      lastLoginAt: a.lastLoginAt,
       courses: a.courses.map((c) => ({
         id: c.courseId,
         nameEt: c.course.nameEt,
@@ -62,7 +65,7 @@ export async function POST(req: Request) {
       { status: 400 },
     );
   }
-  const { email, password, role, courseIds } = parsed.data;
+  const { email, name, password, role, courseIds } = parsed.data;
   const normalisedEmail = email.trim().toLowerCase();
   const existing = await prisma.admin.findUnique({
     where: { email: normalisedEmail },
@@ -76,6 +79,7 @@ export async function POST(req: Request) {
   const created = await prisma.admin.create({
     data: {
       email: normalisedEmail,
+      name: name || null,
       passwordHash: hashPassword(password),
       role,
       courses:

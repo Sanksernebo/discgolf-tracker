@@ -6,8 +6,10 @@ import { useTranslations } from "next-intl";
 type AdminSummary = {
   id: string;
   email: string;
+  name: string | null;
   role: "superuser" | "courseAdmin";
   createdAt: string;
+  lastLoginAt: string | null;
   courses: { id: string; nameEt: string; nameEn: string }[];
 };
 
@@ -26,6 +28,7 @@ export function AdminUsers({
   const [admins, setAdmins] = useState<AdminSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<AdminSummary | "new" | null>(null);
+  const [historyFor, setHistoryFor] = useState<AdminSummary | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const courseNameById = useMemo(() => {
@@ -98,7 +101,14 @@ export function AdminUsers({
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-medium break-all">{a.email}</span>
+                  <span className="font-medium break-all">
+                    {a.name || a.email}
+                  </span>
+                  {a.name && (
+                    <span className="text-sm text-neutral-500 break-all">
+                      {a.email}
+                    </span>
+                  )}
                   <span
                     className={
                       (a.role === "superuser"
@@ -119,6 +129,12 @@ export function AdminUsers({
                   {t("createdOn", {
                     date: new Date(a.createdAt).toLocaleDateString(),
                   })}
+                  {" · "}
+                  {a.lastLoginAt
+                    ? t("lastLogin", {
+                        date: new Date(a.lastLoginAt).toLocaleString(),
+                      })
+                    : t("neverLoggedIn")}
                 </div>
                 {a.role === "courseAdmin" && (
                   <div className="mt-2 text-xs text-neutral-600 dark:text-neutral-400">
@@ -134,7 +150,14 @@ export function AdminUsers({
                   </div>
                 )}
               </div>
-              <div className="flex gap-2 flex-shrink-0">
+              <div className="flex gap-2 flex-shrink-0 flex-wrap justify-end">
+                <button
+                  type="button"
+                  onClick={() => setHistoryFor(a)}
+                  className="text-sm px-3 py-1.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 min-h-11"
+                >
+                  {t("loginHistory")}
+                </button>
                 <button
                   type="button"
                   onClick={() => setEditing(a)}
@@ -155,6 +178,10 @@ export function AdminUsers({
             </li>
           ))}
         </ul>
+      )}
+
+      {historyFor && (
+        <LoginHistory admin={historyFor} onClose={() => setHistoryFor(null)} />
       )}
 
       {editing && (
@@ -179,6 +206,7 @@ export function AdminUsers({
 
 type EditorDraft = {
   email: string;
+  name: string;
   password: string;
   role: "superuser" | "courseAdmin";
   courseIds: string[];
@@ -198,6 +226,7 @@ function AdminEditor({
   const t = useTranslations("admin");
   const [draft, setDraft] = useState<EditorDraft>(() => ({
     email: initial?.email ?? "",
+    name: initial?.name ?? "",
     password: "",
     role: initial?.role ?? "courseAdmin",
     courseIds: initial?.courses.map((c) => c.id) ?? [],
@@ -220,6 +249,7 @@ function AdminEditor({
     try {
       const body: Record<string, unknown> = {
         email: draft.email.trim().toLowerCase(),
+        name: draft.name.trim(),
         role: draft.role,
         courseIds: draft.role === "courseAdmin" ? draft.courseIds : [],
       };
@@ -289,6 +319,20 @@ function AdminEditor({
             value={draft.email}
             onChange={(e) => setDraft({ ...draft, email: e.target.value })}
             autoComplete="off"
+            className={inputCls}
+          />
+        </label>
+
+        <label className="flex flex-col gap-1 text-sm">
+          <span className="text-xs uppercase text-neutral-500">
+            {t("name")}
+          </span>
+          <input
+            type="text"
+            value={draft.name}
+            onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+            autoComplete="off"
+            maxLength={100}
             className={inputCls}
           />
         </label>
@@ -367,6 +411,98 @@ function AdminEditor({
             {t("save")}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                               Login history                                */
+/* -------------------------------------------------------------------------- */
+
+type LoginEvent = {
+  id: string;
+  ip: string | null;
+  userAgent: string | null;
+  createdAt: string;
+};
+
+function LoginHistory({
+  admin,
+  onClose,
+}: {
+  admin: AdminSummary;
+  onClose: () => void;
+}) {
+  const t = useTranslations("admin");
+  const [logins, setLogins] = useState<LoginEvent[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    fetch(`/api/admin/admins/${admin.id}/logins`)
+      .then(async (res) => {
+        if (!res.ok) throw new Error(String(res.status));
+        const data = (await res.json()) as { logins: LoginEvent[] };
+        setLogins(data.logins);
+      })
+      .catch(() => setFailed(true));
+  }, [admin.id]);
+
+  return (
+    <div
+      className="fixed inset-0 z-[1000] bg-black/50 flex items-center justify-center p-2 overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="login-history-title"
+        className="w-full max-w-lg bg-white dark:bg-neutral-900 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-5 flex flex-col gap-3 my-8 max-h-[95vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h2 id="login-history-title" className="text-lg font-semibold">
+              {t("loginHistory")}
+            </h2>
+            <div className="text-xs text-neutral-500 break-all">
+              {admin.name ? `${admin.name} · ${admin.email}` : admin.email}
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label={t("cancel")}
+            className="h-9 w-9 grid place-items-center rounded-full text-neutral-500 hover:text-neutral-900 dark:hover:text-white"
+          >
+            <span aria-hidden>✕</span>
+          </button>
+        </div>
+
+        {failed && (
+          <div className="text-sm text-red-600">{t("loginHistoryError")}</div>
+        )}
+        {!failed && logins === null && (
+          <div className="text-sm text-neutral-500">Loading...</div>
+        )}
+        {logins?.length === 0 && (
+          <div className="text-sm text-neutral-500">{t("neverLoggedIn")}</div>
+        )}
+        {logins && logins.length > 0 && (
+          <ul className="flex flex-col divide-y divide-neutral-200 dark:divide-neutral-800">
+            {logins.map((l) => (
+              <li key={l.id} className="py-2 text-sm">
+                <div className="font-medium">
+                  {new Date(l.createdAt).toLocaleString()}
+                </div>
+                <div className="text-xs text-neutral-500 break-all">
+                  {l.ip ?? "—"}
+                  {l.userAgent ? ` · ${l.userAgent}` : ""}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );

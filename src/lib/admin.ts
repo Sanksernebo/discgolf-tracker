@@ -128,15 +128,52 @@ async function maybeBootstrapSuperuser(
 /*                                 Auth entry                                 */
 /* -------------------------------------------------------------------------- */
 
+export type LoginMeta = { ip?: string | null; userAgent?: string | null };
+
+const LOGIN_HISTORY_RETENTION_MS = 365 * 24 * 60 * 60 * 1000;
+
+/** Pull client IP + user agent off a request for the login log. */
+export function loginMetaFromRequest(req: Request): LoginMeta {
+  // First hop of X-Forwarded-For is the client when behind Zone's proxy.
+  const forwarded = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
+  return {
+    ip: forwarded || req.headers.get("x-real-ip") || null,
+    userAgent: req.headers.get("user-agent"),
+  };
+}
+
+/** Append a login-history row, bump lastLoginAt, and prune old history. */
+async function recordLogin(adminId: string, meta: LoginMeta) {
+  const now = new Date();
+  await prisma.$transaction([
+    prisma.adminLoginEvent.create({
+      data: {
+        adminId,
+        ip: meta.ip?.slice(0, 64) ?? null,
+        userAgent: meta.userAgent?.slice(0, 300) ?? null,
+        createdAt: now,
+      },
+    }),
+    prisma.admin.update({ where: { id: adminId }, data: { lastLoginAt: now } }),
+    prisma.adminLoginEvent.deleteMany({
+      where: {
+        createdAt: { lt: new Date(now.getTime() - LOGIN_HISTORY_RETENTION_MS) },
+      },
+    }),
+  ]);
+}
+
 /** Sign in with email + password. Returns the Admin on success, null otherwise. */
 export async function signIn(
   email: string,
   password: string,
+  meta: LoginMeta = {},
 ): Promise<Admin | null> {
   const normalised = email.trim().toLowerCase();
 
   const bootstrapped = await maybeBootstrapSuperuser(normalised, password);
   if (bootstrapped) {
+    await recordLogin(bootstrapped.id, meta);
     await setAdminSession(bootstrapped.id);
     return bootstrapped;
   }
@@ -147,6 +184,7 @@ export async function signIn(
   if (!admin) return null;
   if (!verifyPasswordHash(password, admin.passwordHash)) return null;
 
+  await recordLogin(admin.id, meta);
   await setAdminSession(admin.id);
   return admin;
 }

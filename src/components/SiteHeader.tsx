@@ -2,11 +2,12 @@ import { getTranslations } from "next-intl/server";
 import { Link } from "@/i18n/navigation";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { ThemeToggle } from "./ThemeToggle";
-import { isAdmin } from "@/lib/admin";
+import { SignOutButton } from "./admin/SignOutButton";
+import { getCurrentAdmin } from "@/lib/admin";
 
 export async function SiteHeader() {
   const t = await getTranslations();
-  const authed = await isAdmin();
+  const admin = await getCurrentAdmin();
 
   return (
     <header className="border-b border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/70 backdrop-blur">
@@ -36,7 +37,7 @@ export async function SiteHeader() {
           >
             {t("nav.home")}
           </Link>
-          {authed && (
+          {admin && (
             <Link
               href="/admin"
               className="px-2 py-1 rounded hover:text-emerald-600 transition-colors min-h-11 inline-flex items-center"
@@ -44,6 +45,15 @@ export async function SiteHeader() {
               {t("nav.admin")}
             </Link>
           )}
+          {admin && (
+            <span
+              className="text-neutral-600 dark:text-neutral-300 max-w-40 truncate"
+              title={admin.email}
+            >
+              {admin.name || admin.email}
+            </span>
+          )}
+          {admin && <SignOutButton />}
           <ThemeToggle />
           <LanguageSwitcher />
         </nav>
