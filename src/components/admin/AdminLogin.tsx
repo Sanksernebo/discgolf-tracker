@@ -48,25 +48,25 @@ export function AdminLogin() {
             className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-2 focus:outline-none focus:border-emerald-500"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          <span className="flex items-center justify-between gap-2">
+        <div className="flex flex-col gap-1">
+          <label className="flex flex-col gap-1 text-sm">
             <span className="text-neutral-500">{t("password")}</span>
-            <Link
-              href="/admin/forgot-password"
-              className="text-emerald-700 dark:text-emerald-400 hover:underline"
-            >
-              {t("forgotPassword")}
-            </Link>
-          </span>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-            required
-            className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-2 focus:outline-none focus:border-emerald-500"
-          />
-        </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-2 focus:outline-none focus:border-emerald-500"
+            />
+          </label>
+          <Link
+            href="/admin/forgot-password"
+            className="self-end text-sm text-emerald-700 dark:text-emerald-400 hover:underline"
+          >
+            {t("forgotPassword")}
+          </Link>
+        </div>
         {error && <div className="text-sm text-red-600">{error}</div>}
         <button
           type="submit"

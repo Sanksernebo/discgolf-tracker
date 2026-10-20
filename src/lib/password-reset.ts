@@ -32,7 +32,11 @@ export async function requestPasswordReset(
   const admin = await prisma.admin.findUnique({
     where: { email: email.trim().toLowerCase() },
   });
-  if (!admin) return;
+  if (!admin) {
+    // Logged server-side only; the HTTP response stays identical.
+    console.info("[password-reset] no admin with that email; nothing sent");
+    return;
+  }
 
   const recent = await prisma.passwordResetToken.findFirst({
     where: {
@@ -40,7 +44,10 @@ export async function requestPasswordReset(
       createdAt: { gt: new Date(Date.now() - RESEND_COOLDOWN_MS) },
     },
   });
-  if (recent) return;
+  if (recent) {
+    console.info(`[password-reset] throttled repeat request for ${admin.email}`);
+    return;
+  }
 
   const token = randomBytes(32).toString("hex");
   await prisma.$transaction([
@@ -64,8 +71,14 @@ export async function requestPasswordReset(
       ? `Tere!\n\nKeegi (loodetavasti sina) palus lähtestada halduri konto parooli.\nAva see link tunni aja jooksul, et valida uus parool:\n\n${link}\n\nKui sa seda ei palunud, võid selle kirja lihtsalt kustutada.`
       : `Hi,\n\nSomeone (hopefully you) asked to reset the password for your admin account.\nOpen this link within an hour to choose a new password:\n\n${link}\n\nIf you didn't ask for this, you can ignore this email.`,
   });
-  if (!sent && process.env.NODE_ENV !== "production") {
-    console.info(`[password-reset] SMTP not configured; reset link for ${admin.email}: ${link}`);
+  if (sent) {
+    console.info(`[password-reset] reset email sent to ${admin.email}`);
+  } else if (process.env.NODE_ENV !== "production") {
+    console.info(`[password-reset] email not sent; reset link for ${admin.email}: ${link}`);
+  } else {
+    console.error(
+      `[password-reset] could not email ${admin.email}; check SMTP_* settings`,
+    );
   }
 }
 

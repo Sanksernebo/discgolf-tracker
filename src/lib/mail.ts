@@ -7,6 +7,7 @@ function getTransporter(): Transporter | null {
   const host = process.env.SMTP_HOST;
   if (!host) {
     // Mail isn't set up — legal in dev, callers fall back to logging.
+    console.warn("[mail] SMTP_HOST is not set; outgoing email is disabled");
     transporter = null;
     return null;
   }
@@ -14,7 +15,9 @@ function getTransporter(): Transporter | null {
   transporter = nodemailer.createTransport({
     host,
     port,
+    // 465 = implicit TLS; anything else (587) must upgrade via STARTTLS.
     secure: port === 465,
+    requireTLS: port !== 465,
     auth: process.env.SMTP_USER
       ? { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS ?? "" }
       : undefined,
