@@ -373,6 +373,39 @@ describe("GET /api/admin/analytics", () => {
     expect(body.summary.players).toBe(0);
   });
 
+  it("courseAdmin can combine several assigned courses, ignoring unassigned ones", async () => {
+    await loginAsSuperuser();
+    const c1 = await seedCourse({ nameEt: "A" });
+    const c2 = await seedCourse({ nameEt: "B" });
+    const c3 = await seedCourse({ nameEt: "C" });
+    const c4 = await seedCourse({ nameEt: "D" });
+    const now = new Date();
+    await prisma.checkIn.createMany({
+      data: [
+        { courseId: c1, deviceId: "d1", partySize: 1 },
+        { courseId: c2, deviceId: "d2", partySize: 2 },
+        { courseId: c3, deviceId: "d3", partySize: 4 },
+        { courseId: c4, deviceId: "d4", partySize: 8 },
+      ].map((r) => ({ ...r, startedAt: now, lastPingAt: now })),
+    });
+    await createCourseAdmin("ca@ex.com", "strong-password", [c1, c2, c3]);
+    cookieStore.current = makeCookieStore();
+    await loginAs("ca@ex.com", "strong-password");
+
+    const { GET } = await import("@/app/api/admin/analytics/route");
+    const res = await GET(
+      new Request(
+        `http://x/api/admin/analytics?range=week&courseId=${c1}&courseId=${c2}&courseId=${c4}`,
+      ),
+    );
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.summary.players).toBe(3);
+    expect(
+      body.courses.map((c: { courseId: string }) => c.courseId).sort(),
+    ).toEqual([c1, c2].sort());
+  });
+
   it("custom range only counts check-ins inside the chosen days", async () => {
     await loginAsSuperuser();
     const c1 = await seedCourse({ nameEt: "A" });

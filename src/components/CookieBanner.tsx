@@ -29,7 +29,7 @@ export function CookieBanner() {
       aria-modal="false"
       aria-labelledby="cookie-title"
       aria-describedby="cookie-desc"
-      className="fixed inset-x-0 bottom-0 z-[1500] p-3 sm:p-4"
+      className="fixed inset-x-0 bottom-0 z-[1500] p-3 sm:p-4 print:hidden"
     >
       <div className="mx-auto max-w-3xl rounded-2xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-lg p-4 sm:p-5 flex flex-col gap-3">
         <div className="flex items-start gap-3">

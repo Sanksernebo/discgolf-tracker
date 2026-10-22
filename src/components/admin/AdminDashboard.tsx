@@ -93,7 +93,7 @@ export function AdminDashboard() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-3 flex-wrap">
+      <div className="flex items-start justify-between gap-3 flex-wrap print:hidden">
         <div>
           <h1 className="text-2xl font-semibold">{t("title")}</h1>
           {me && (
@@ -110,7 +110,7 @@ export function AdminDashboard() {
         </div>
       </div>
 
-      <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto">
+      <div className="flex gap-1 border-b border-neutral-200 dark:border-neutral-800 overflow-x-auto print:hidden">
         {availableTabs.map((k) => (
           <button
             key={k}

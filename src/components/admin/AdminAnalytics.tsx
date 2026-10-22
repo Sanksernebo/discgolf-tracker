@@ -1,7 +1,31 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useLocale, useTranslations } from "next-intl";
+import {
+  buildExportTables,
+  csvBytes,
+  csvZip,
+  exportBaseName,
+  localDay,
+  toXlsx,
+  type ExportLabels,
+  type ExportTable,
+} from "@/lib/analytics-export";
+import {
+  downloadBlob,
+  downloadBytes,
+  pngBlob,
+  printReport,
+  svgBlob,
+} from "./export-dom";
 
 type Range = "day" | "week" | "month" | "year" | "all" | "custom";
 
@@ -75,15 +99,16 @@ export function AdminAnalytics({
 }) {
   const t = useTranslations("admin");
   const locale = useLocale();
-  // Superuser + no assigned filter => "All"; course admin auto-picks their
-  // single course when they only have one, otherwise "All (assigned)".
+  // An empty selection means "All" (every course for a superuser, every
+  // assigned course for a course admin). Any subset can be combined, e.g.
+  // the handful of courses one admin budgets for together.
   const singleCourseAdmin =
     scope === "courseAdmin" && courses.length === 1;
 
   const [range, setRange] = useState<Range>("month");
-  const [courseId, setCourseId] = useState<string>(() =>
-    singleCourseAdmin ? courses[0].id : "",
-  );
+  const [selectedIds, setSelectedIds] = useState<string[]>([]);
+  // Stable dependency for the fetch effect (array identity changes on toggle).
+  const selectedKey = selectedIds.join(",");
   const [customFrom, setCustomFrom] = useState(() => isoDay(6));
   const [customTo, setCustomTo] = useState(() => isoDay());
   const [data, setData] = useState<Analytics | null>(null);
@@ -106,7 +131,9 @@ export function AdminAnalytics({
           params.set("from", customFrom);
           params.set("to", customTo);
         }
-        if (courseId) params.set("courseId", courseId);
+        for (const id of selectedKey ? selectedKey.split(",") : []) {
+          params.append("courseId", id);
+        }
         const r = await fetch(`/api/admin/analytics?${params.toString()}`, {
           signal: controller.signal,
         });
@@ -121,16 +148,33 @@ export function AdminAnalytics({
     }
     load();
     return () => controller.abort();
-  }, [range, courseId, customFrom, customTo, customValid]);
+  }, [range, selectedKey, customFrom, customTo, customValid]);
 
   const courseName = (c: CourseOption) =>
     locale === "en" ? c.nameEn : c.nameEt;
+
+  function toggleCourse(id: string) {
+    setSelectedIds((prev) => {
+      const next = prev.includes(id)
+        ? prev.filter((x) => x !== id)
+        : [...prev, id];
+      // Selecting every course is the same as "All"; collapse it so the
+      // "All" chip lights up and the course breakdown stays consistent.
+      return next.length === courses.length ? [] : next;
+    });
+  }
+
+  const chipClass = (active: boolean) =>
+    (active
+      ? "bg-emerald-500 text-white border-emerald-500"
+      : "text-neutral-600 dark:text-neutral-300 border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800") +
+    " px-3 py-1.5 text-sm min-h-11 rounded-full border transition";
 
   const ranges: Range[] = ["day", "week", "month", "year", "all", "custom"];
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex flex-wrap items-center gap-3">
+      <div className="flex flex-wrap items-center gap-3 print:hidden">
         <label className="flex flex-col text-xs text-neutral-500">
           {t("analyticsRange")}
           <div className="mt-1 inline-flex rounded-full border border-neutral-300 dark:border-neutral-700 overflow-hidden">
@@ -169,27 +213,43 @@ export function AdminAnalytics({
           </>
         )}
 
-        <label className="flex flex-col text-xs text-neutral-500">
+      </div>
+
+      {!singleCourseAdmin && courses.length > 0 && (
+        <div
+          role="group"
+          aria-label={t("analyticsCourse")}
+          className="flex flex-col text-xs text-neutral-500 print:hidden"
+        >
           {t("analyticsCourse")}
-          <select
-            className="mt-1 h-11 rounded-full border border-neutral-300 dark:border-neutral-700 bg-transparent px-3 text-sm"
-            value={courseId}
-            onChange={(e) => setCourseId(e.target.value)}
-            disabled={singleCourseAdmin}
-          >
-            <option value="">
+          <div className="mt-1 flex flex-wrap gap-2">
+            <button
+              type="button"
+              aria-pressed={selectedIds.length === 0}
+              onClick={() => setSelectedIds([])}
+              className={chipClass(selectedIds.length === 0)}
+            >
               {scope === "superuser"
                 ? t("analyticsAllCourses")
                 : t("analyticsAllAssigned")}
-            </option>
-            {courses.map((c) => (
-              <option key={c.id} value={c.id}>
-                {courseName(c)}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
+            </button>
+            {courses.map((c) => {
+              const active = selectedIds.includes(c.id);
+              return (
+                <button
+                  key={c.id}
+                  type="button"
+                  aria-pressed={active}
+                  onClick={() => toggleCourse(c.id)}
+                  className={chipClass(active)}
+                >
+                  {courseName(c)}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
 
       {range === "custom" && !customValid && (
         <div className="text-sm text-red-600">{t("analyticsInvalidRange")}</div>
@@ -250,6 +310,42 @@ function AnalyticsBody({
     { weekday: 0, checkIns: 0, players: 0 },
   );
 
+  const exportLabels = useMemo<ExportLabels>(
+    () => ({
+      summary: t("analyticsSummaryTitle"),
+      daily: t("analyticsDailyTitle"),
+      hourly: t("analyticsHourTitle"),
+      weekday: t("analyticsWeekdayTitle"),
+      heatmap: t("analyticsHeatmapTitle"),
+      courses: t("analyticsCourseBreakdown"),
+      metric: t("analyticsColMetric"),
+      value: t("analyticsColValue"),
+      previous: t("analyticsColPrevious"),
+      from: t("analyticsFrom"),
+      to: t("analyticsTo"),
+      date: t("analyticsColDate"),
+      hour: t("analyticsColHour"),
+      weekdayCol: t("analyticsColWeekday"),
+      course: t("analyticsColCourse"),
+      players: t("analyticsColPlayers"),
+      checkIns: t("analyticsColCheckIns"),
+      uniqueVisitors: t("analyticsUniqueVisitors"),
+      avgPartySize: t("analyticsAvgParty"),
+      avgDurationMinutes: t("analyticsColAvgDuration"),
+      returningPct: t("analyticsColReturning"),
+      activeNow: t("analyticsActiveNow"),
+      weekdayNames,
+    }),
+    [t, weekdayNames],
+  );
+  const tables = useMemo(
+    () => buildExportTables(data, exportLabels, locale),
+    [data, exportLabels, locale],
+  );
+  const [, dailyT, hourlyT, weekdayT, heatmapT, coursesT] = tables;
+  const baseName = exportBaseName(data);
+  const fileFor = (table: ExportTable) => `${baseName}_${table.name}`;
+
   const prev = data.previousSummary;
   const playersDelta = deltaPct(data.summary.players, prev?.players);
   const visitorsDelta = deltaPct(
@@ -261,6 +357,46 @@ function AnalyticsBody({
 
   return (
     <div className="flex flex-col gap-6">
+      <div className="flex items-end justify-between gap-3">
+        {/* Print-only heading so a saved PDF says what it covers. */}
+        <div className="hidden print:block">
+          <h2 className="text-xl font-semibold">{t("analyticsReportTitle")}</h2>
+          <p className="text-sm text-neutral-500">
+            {localDay(data.from)} – {localDay(data.to)}
+            {data.courses.length > 0 &&
+              ` · ${data.courses
+                .map((c) => (locale === "en" ? c.nameEn : c.nameEt))
+                .join(", ")}`}
+          </p>
+        </div>
+        <ExportMenu
+          className="ml-auto print:hidden"
+          onXlsx={() =>
+            downloadBytes(
+              toXlsx(tables),
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+              `${baseName}.xlsx`,
+            )
+          }
+          onCsv={() =>
+            downloadBytes(
+              csvZip(tables),
+              "application/zip",
+              `${baseName}_csv.zip`,
+            )
+          }
+          onJson={() =>
+            downloadBlob(
+              new Blob([JSON.stringify(data, null, 2)], {
+                type: "application/json",
+              }),
+              `${baseName}.json`,
+            )
+          }
+          onPrint={printReport}
+        />
+      </div>
+
       {/* Summary cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <SummaryCard
@@ -302,7 +438,10 @@ function AnalyticsBody({
       ) : (
         <>
           {/* Daily time series */}
-          <Panel title={t("analyticsDailyTitle")}>
+          <Panel
+            title={t("analyticsDailyTitle")}
+            download={{ table: dailyT, file: fileFor(dailyT) }}
+          >
             <DailyChart data={data.daily} dateFmt={dateFmt} />
           </Panel>
 
@@ -310,6 +449,7 @@ function AnalyticsBody({
           <Panel
             title={t("analyticsHourTitle")}
             subtitle={t("analyticsHourSubtitle", { hour: peakHour.hour })}
+            download={{ table: hourlyT, file: fileFor(hourlyT) }}
           >
             <HourChart data={data.hourly} />
           </Panel>
@@ -320,6 +460,7 @@ function AnalyticsBody({
             subtitle={t("analyticsWeekdaySubtitle", {
               weekday: weekdayNames[peakWeekday.weekday] ?? "",
             })}
+            download={{ table: weekdayT, file: fileFor(weekdayT) }}
           >
             <WeekdayChart data={data.weekday} labels={weekdayNames} />
           </Panel>
@@ -328,13 +469,17 @@ function AnalyticsBody({
           <Panel
             title={t("analyticsHeatmapTitle")}
             subtitle={t("analyticsHeatmapSubtitle")}
+            download={{ table: heatmapT, file: fileFor(heatmapT) }}
           >
             <HeatmapChart data={data.heatmap} labels={weekdayNames} />
           </Panel>
 
           {/* Course breakdown (only useful when >1 course in scope) */}
           {data.courses.length > 1 && (
-            <Panel title={t("analyticsCourseBreakdown")}>
+            <Panel
+              title={t("analyticsCourseBreakdown")}
+              download={{ table: coursesT, file: fileFor(coursesT), image: false }}
+            >
               <CourseTable
                 rows={data.courses}
                 locale={locale}
@@ -454,25 +599,173 @@ function DateField({
   );
 }
 
+/**
+ * Content width of the enclosing Panel in CSS px (0 until measured). Charts
+ * draw at this width so they fill the panel on wide screens, falling back to
+ * their own minimum width (and horizontal scroll) on narrow ones.
+ */
+const PanelWidthContext = createContext(0);
+
 function Panel({
   title,
   subtitle,
+  download,
   children,
 }: {
   title: string;
   subtitle?: string;
+  /** Adds CSV (and, unless `image: false`, PNG/SVG of the chart) buttons. */
+  download?: { table: ExportTable; file: string; image?: boolean };
   children: React.ReactNode;
 }) {
+  const t = useTranslations("admin");
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    const el = bodyRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(([entry]) => {
+      setWidth(Math.floor(entry.contentRect.width));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const chartSvg = () => bodyRef.current?.querySelector("svg") ?? null;
+
+  async function save(format: "csv" | "png" | "svg") {
+    if (!download) return;
+    try {
+      if (format === "csv") {
+        downloadBytes(
+          csvBytes(download.table),
+          "text/csv;charset=utf-8",
+          `${download.file}.csv`,
+        );
+        return;
+      }
+      const svg = chartSvg();
+      if (!svg) return;
+      const blob = format === "png" ? await pngBlob(svg) : svgBlob(svg);
+      downloadBlob(blob, `${download.file}.${format}`);
+    } catch (e) {
+      console.error(e);
+      alert(t("analyticsDownloadError"));
+    }
+  }
+
+  const formats: ("csv" | "png" | "svg")[] = download
+    ? download.image === false
+      ? ["csv"]
+      : ["csv", "png", "svg"]
+    : [];
+
   return (
-    <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-3">
-      <header className="mb-2">
-        <h3 className="text-sm font-medium">{title}</h3>
-        {subtitle && (
-          <p className="text-xs text-neutral-500 mt-0.5">{subtitle}</p>
+    <section className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-3 break-inside-avoid">
+      <header className="mb-2 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h3 className="text-sm font-medium">{title}</h3>
+          {subtitle && (
+            <p className="text-xs text-neutral-500 mt-0.5">{subtitle}</p>
+          )}
+        </div>
+        {formats.length > 0 && (
+          <div className="flex gap-1 shrink-0 print:hidden">
+            {formats.map((f) => (
+              <button
+                key={f}
+                type="button"
+                onClick={() => save(f)}
+                aria-label={t("analyticsDownload", {
+                  title,
+                  format: f.toUpperCase(),
+                })}
+                title={t("analyticsDownload", {
+                  title,
+                  format: f.toUpperCase(),
+                })}
+                className="text-xs px-2.5 min-h-11 sm:min-h-8 rounded-full border border-neutral-300 dark:border-neutral-700 text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
+              >
+                {f.toUpperCase()}
+              </button>
+            ))}
+          </div>
         )}
       </header>
-      <div className="overflow-x-auto">{children}</div>
+      <div ref={bodyRef} className="overflow-x-auto print:overflow-visible">
+        <PanelWidthContext.Provider value={width}>
+          {children}
+        </PanelWidthContext.Provider>
+      </div>
     </section>
+  );
+}
+
+/** "Export ▾" dropdown for whole-report downloads. */
+function ExportMenu({
+  className = "",
+  onXlsx,
+  onCsv,
+  onJson,
+  onPrint,
+}: {
+  className?: string;
+  onXlsx: () => void;
+  onCsv: () => void;
+  onJson: () => void;
+  onPrint: () => void;
+}) {
+  const t = useTranslations("admin");
+  const ref = useRef<HTMLDetailsElement>(null);
+
+  // <details> doesn't close itself on outside clicks or Escape.
+  useEffect(() => {
+    function onPointer(e: PointerEvent) {
+      if (ref.current?.open && !ref.current.contains(e.target as Node)) {
+        ref.current.open = false;
+      }
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape" && ref.current?.open) ref.current.open = false;
+    }
+    document.addEventListener("pointerdown", onPointer);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onPointer);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, []);
+
+  const items: [string, () => void][] = [
+    [t("analyticsExportXlsx"), onXlsx],
+    [t("analyticsExportCsv"), onCsv],
+    [t("analyticsExportJson"), onJson],
+    [t("analyticsExportPdf"), onPrint],
+  ];
+
+  return (
+    <details ref={ref} className={`relative ${className}`}>
+      <summary className="list-none cursor-pointer select-none inline-flex items-center gap-1 px-4 min-h-11 rounded-full border border-neutral-300 dark:border-neutral-700 text-sm hover:bg-neutral-100 dark:hover:bg-neutral-800 transition [&::-webkit-details-marker]:hidden">
+        {t("analyticsExport")}
+        <span aria-hidden className="text-xs">▾</span>
+      </summary>
+      <div className="absolute right-0 z-20 mt-1 min-w-56 rounded-2xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-1 flex flex-col">
+        {items.map(([label, action]) => (
+          <button
+            key={label}
+            type="button"
+            onClick={() => {
+              if (ref.current) ref.current.open = false;
+              action();
+            }}
+            className="text-left text-sm px-3 min-h-11 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 transition"
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+    </details>
   );
 }
 
@@ -522,7 +815,11 @@ function DailyChart({
   data: Analytics["daily"];
   dateFmt: Intl.DateTimeFormat;
 }) {
-  const width = Math.max(320, data.length * 22);
+  const width = Math.max(
+    320,
+    data.length * 22,
+    useContext(PanelWidthContext),
+  );
   const height = 200;
   const pad = { top: 20, right: 12, bottom: 28, left: 32 };
   const w = width - pad.left - pad.right;
@@ -555,7 +852,7 @@ function DailyChart({
       height={height}
       role="img"
       aria-label="Daily traffic"
-      className="max-w-full"
+      className="max-w-full h-auto"
     >
       {/* Y-axis gridlines */}
       {[0.25, 0.5, 0.75, 1].map((f) => (
@@ -629,7 +926,7 @@ function DailyChart({
 }
 
 function HourChart({ data }: { data: Analytics["hourly"] }) {
-  const width = 24 * 22;
+  const width = Math.max(24 * 22, useContext(PanelWidthContext));
   const height = 180;
   const pad = { top: 18, right: 8, bottom: 24, left: 24 };
   const w = width - pad.left - pad.right;
@@ -644,7 +941,7 @@ function HourChart({ data }: { data: Analytics["hourly"] }) {
       height={height}
       role="img"
       aria-label="Hour of day"
-      className="max-w-full"
+      className="max-w-full h-auto"
     >
       {data.map((d) => {
         const barH = (d.players / max) * h;
@@ -692,14 +989,15 @@ function WeekdayChart({
   data: Analytics["weekday"];
   labels: string[];
 }) {
-  const width = 7 * 44;
+  const width = Math.max(7 * 44, useContext(PanelWidthContext));
   const height = 180;
   const pad = { top: 18, right: 8, bottom: 24, left: 24 };
   const w = width - pad.left - pad.right;
   const h = height - pad.top - pad.bottom;
   const max = Math.max(1, ...data.map((d) => d.players));
   const slot = w / 7;
-  const barW = slot - 12;
+  // Cap bar width so a full-width panel doesn't produce slab-like bars.
+  const barW = Math.min(slot - 12, 64);
 
   return (
     <svg
@@ -708,7 +1006,7 @@ function WeekdayChart({
       height={height}
       role="img"
       aria-label="Day of week"
-      className="max-w-full"
+      className="max-w-full h-auto"
     >
       {data.map((d) => {
         const barH = (d.players / max) * h;
@@ -756,11 +1054,15 @@ function HeatmapChart({
 }) {
   // Grid geometry: y-axis reserves room for weekday labels, x-axis for
   // an hour scale under each column.
-  const cellW = 22;
-  const cellH = 22;
   const padLeft = 44;
   const padTop = 4;
   const padBottom = 20;
+  // Columns stretch to fill the panel; rows stay a fixed height.
+  const cellW = Math.max(
+    22,
+    (useContext(PanelWidthContext) - padLeft - 8) / 24,
+  );
+  const cellH = 22;
   const width = padLeft + cellW * 24 + 8;
   const height = padTop + cellH * 7 + padBottom;
 
@@ -773,7 +1075,7 @@ function HeatmapChart({
       height={height}
       role="img"
       aria-label="Weekday × hour utilization"
-      className="max-w-full"
+      className="max-w-full h-auto"
     >
       {/* Weekday row labels */}
       {labels.map((name, w) => (
