@@ -247,8 +247,11 @@ export type AnalyticsInput = {
   courseIds: string[] | null;
   from: Date;
   to: Date;
-  /** Optional single-course filter that intersects with `courseIds`. */
-  focusCourseId?: string | null;
+  /**
+   * Optional course filter (one or more) that intersects with `courseIds`.
+   * Empty or omitted means no filter.
+   */
+  focusCourseIds?: string[] | null;
   /**
    * When true (default), also fetch the same-length window immediately
    * preceding [from, to] so the UI can render period-over-period deltas.
@@ -271,15 +274,16 @@ export function previousRange(
 export async function getAnalytics(
   input: AnalyticsInput,
 ): Promise<AnalyticsResult> {
-  const { from, to, focusCourseId } = input;
+  const { from, to } = input;
+  const focus = input.focusCourseIds ?? [];
   const compareToPrevious = input.compareToPrevious ?? true;
 
-  // Resolve final course scope: intersect the admin's editable set with any
-  // course selected in the UI. `null` means "no filter" (superuser, all).
+  // Resolve final course scope: intersect the admin's editable set with the
+  // courses selected in the UI. `null` means "no filter" (superuser, all).
   let scope: string[] | null = input.courseIds;
-  if (focusCourseId) {
-    if (scope === null) scope = [focusCourseId];
-    else scope = scope.filter((id) => id === focusCourseId);
+  if (focus.length > 0) {
+    if (scope === null) scope = [...new Set(focus)];
+    else scope = scope.filter((id) => focus.includes(id));
   }
 
   // A courseAdmin with no assignments (or a focus filter that intersects to

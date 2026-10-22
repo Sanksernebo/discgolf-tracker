@@ -11,14 +11,14 @@ import {
 const RangeEnum = z.enum(["day", "week", "month", "year", "all", "custom"]);
 
 /**
- * GET /api/admin/analytics?range=week&courseId=abc
+ * GET /api/admin/analytics?range=week&courseId=abc&courseId=def
  * GET /api/admin/analytics?range=custom&from=2026-06-01&to=2026-06-30
  *
  * `custom` takes inclusive Tallinn-local days; malformed or reversed dates
- * are rejected with 400.
+ * are rejected with 400. `courseId` may repeat to combine several courses.
  *
  * Auth is required. Scope is derived from the admin: a superuser sees all
- * courses (or a single selected one); a courseAdmin only ever sees the
+ * courses (or the selected ones); a courseAdmin only ever sees the
  * intersection of their assignments and any focus filter.
  */
 export async function GET(req: Request) {
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   const rangeParam = url.searchParams.get("range") ?? "week";
   const parsedRange = RangeEnum.safeParse(rangeParam);
   const range = parsedRange.success ? parsedRange.data : "week";
-  const focusCourseId = url.searchParams.get("courseId") || null;
+  const focusCourseIds = url.searchParams.getAll("courseId").filter(Boolean);
 
   const bounds =
     range === "custom"
@@ -50,7 +50,7 @@ export async function GET(req: Request) {
     courseIds: scope,
     from,
     to,
-    focusCourseId,
+    focusCourseIds,
   });
 
   return NextResponse.json({ range, ...result });

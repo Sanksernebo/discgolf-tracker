@@ -11,7 +11,7 @@ export async function SiteFooter() {
   return (
     <footer
       role="contentinfo"
-      className="mt-8 border-t border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/70"
+      className="mt-8 border-t border-neutral-200 dark:border-neutral-800 bg-white/70 dark:bg-neutral-900/70 print:hidden"
     >
       <div className="max-w-6xl mx-auto px-4 py-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between text-sm text-neutral-600 dark:text-neutral-400">
         <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3">
