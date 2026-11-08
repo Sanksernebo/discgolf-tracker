@@ -8,23 +8,24 @@ datasource db {
 }
 
 model Course {
-  id             String   @id @default(cuid())
-  nameEt         String
-  nameEn         String
-  county         String
-  city           String?
-  latitude       Float
-  longitude      Float
-  descriptionEt  String?  @db.Text
-  descriptionEn  String?  @db.Text
-  imageUrl String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  id            String   @id @default(cuid())
+  nameEt        String
+  nameEn        String
+  county        String
+  city          String?
+  latitude      Float
+  longitude     Float
+  descriptionEt String?  @db.Text
+  descriptionEn String?  @db.Text
+  imageUrl      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   holes    Hole[]
   checkIns CheckIn[]
   issues   IssueReport[]
   admins   CourseAdmin[]
+  ratings  CourseRating[]
 }
 
 model Hole {
@@ -40,17 +41,17 @@ model Hole {
 }
 
 model CheckIn {
-  id                String    @id @default(cuid())
-  courseId          String
-  deviceId          String
-  partySize         Int       @default(1)
-  startedAt         DateTime  @default(now())
-  lastPingAt        DateTime  @default(now())
-  endedAt           DateTime?
+  id             String    @id @default(cuid())
+  courseId       String
+  deviceId       String
+  partySize      Int       @default(1)
+  startedAt      DateTime  @default(now())
+  lastPingAt     DateTime  @default(now())
+  endedAt        DateTime?
   // Throttle bookkeeping for the push worker: last time we sent a periodic
   // reminder, and whether we've already sent the pre-checkout warning.
-  lastReminderAt    DateTime?
-  warningSentAt     DateTime?
+  lastReminderAt DateTime?
+  warningSentAt  DateTime?
 
   course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
 
@@ -141,4 +142,23 @@ model CourseAdmin {
 
   @@id([courseId, adminId])
   @@index([adminId])
+}
+
+model CourseRating {
+  id       String @id @default(cuid())
+  courseId String
+  deviceId String
+
+  overall     Float
+  maintenance Int
+  teeArea     Int
+  experience  Int
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+
+  @@unique([courseId, deviceId])
+  @@index([courseId, createdAt])
 }

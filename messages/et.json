@@ -139,6 +139,33 @@
         "saturday": "L",
         "sunday": "P"
       }
+    },
+
+    "rating": {
+      "title": "Raja hinnang",
+      "overall": "Üldhinnang",
+      "maintenance": "Hooldus",
+      "teeArea": "Teepadade seisukord",
+      "experience": "Mängukogemus",
+      "submit": "Salvesta",
+      "update": "Uuenda",
+      "loading": "Laadin…",
+      "noRatings": "Hinnanguid pole veel.",
+      "checkInRequired": "Hinnangu muutmiseks pead olema rajal hiljuti aktiivne.",
+      "saved": "Salvestatud!",
+      "error": "Salvestamine ebaõnnestus.",
+      "count": "hinnangut",
+      "average": "Keskmine",
+      "activeReports": "{count, plural, =0 {Aktiivseid teateid pole} =1 {# aktiivne teade} other {# aktiivset teadet}}",
+      "latestReports": "Viimased probleemid",
+      "report": "Teade",
+      "showLess": "Näita vähem",
+      "showAll": "Näita kõiki ({count})",
+      "close": "Sulge",
+      "editRating": "Muuda hinnangut",
+      "rateCourse": "Anna rajale hinnang",
+      "ratingInstructions": "Hinda iga kategooriat skaalal 1–5.",
+      "starLabel": "{value} / 5 tärni"
     }
   },
   "checkin": {

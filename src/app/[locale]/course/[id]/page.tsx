@@ -14,6 +14,7 @@ import { CourseMiniMap } from "@/components/map/CourseMiniMap";
 import { Link } from "@/i18n/navigation";
 import { CourseActivityStats } from "@/components/course/CourseActivityStats";
 import { getCourseActivityStats } from "@/lib/course-activity";
+import CourseRatingForm from "@/components/course/CourseRatingForm";
 
 export const dynamic = "force-dynamic";
 
@@ -33,12 +34,27 @@ export default async function CoursePage({
 
   if (!course) notFound();
 
-  const [counts, weather, deviceId, activityStats] = await Promise.all([
-    getActiveCountsByCourse([course.id]),
-    fetchCurrentWeather(course.latitude, course.longitude),
-    getDeviceId(),
-    getCourseActivityStats(course.id),
-  ]);
+  const [counts, weather, deviceId, activityStats, activeIssues] =
+    await Promise.all([
+      getActiveCountsByCourse([course.id]),
+      fetchCurrentWeather(course.latitude, course.longitude),
+      getDeviceId(),
+      getCourseActivityStats(course.id),
+      prisma.issueReport.findMany({
+        where: {
+          courseId: course.id,
+          status: { in: ["open", "in_progress"] },
+        },
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          issueType: true,
+          message: true,
+          status: true,
+          createdAt: true,
+        },
+      }),
+    ]);
 
   const active = deviceId
     ? await getActiveCheckInForDevice(deviceId, course.id)
@@ -55,97 +71,138 @@ export default async function CoursePage({
 
   const totalPar = course.holes.reduce((sum, h) => sum + h.par, 0);
 
+  const isEnglish = locale === "en";
+
+  const pageText = {
+    players: isEnglish ? "Players on course" : "Mängijaid rajal",
+    noPlayers: isEnglish ? "No active players" : "Hetkel pole mängijaid",
+    playersNow: isEnglish ? "Currently playing" : "Hetkel mängimas",
+    holes: isEnglish ? "Holes" : "Korvid",
+    totalPar: isEnglish ? "Total par" : "Raja par",
+    weather: isEnglish ? "Weather" : "Ilm rajal",
+    wind: isEnglish ? "Wind" : "Tuul",
+    precipitation: isEnglish ? "Precipitation" : "Sademed",
+    hole: isEnglish ? "Hole" : "Korv",
+    par: "Par",
+    distance: isEnglish ? "Distance" : "Kaugus",
+    courseDetails: isEnglish ? "Course details" : "Raja info",
+    meters: isEnglish ? "m" : "m",
+    coursePhoto: isEnglish ? "Course overview" : "Raja üldpilt",
+  };
+
   return (
-    <div className="max-w-6xl mx-auto w-full px-4 py-6 flex flex-col gap-6">
-      <div className="flex flex-col gap-2">
+    <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-4 py-5 sm:gap-8 sm:py-8">
+      {/* Tagasi ja raja päis */}
+      <header className="space-y-4">
         <Link
           href={{ pathname: "/", query: { county: course.county } }}
-          className="text-sm text-emerald-700 dark:text-emerald-400 hover:underline focus:outline-none w-fit inline-flex items-center gap-1"
+          className="inline-flex min-h-9 w-fit items-center gap-2 rounded-full text-sm font-medium text-emerald-700 transition hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
         >
           <span aria-hidden="true">←</span>
           {t("course.backToCountyMap", { county: countyLabel })}
         </Link>
 
-        <div className="text-xs uppercase tracking-wide text-neutral-500">
-          {countyLabel}
-          {course.city ? ` · ${course.city}` : ""}
-        </div>
-
-        <h1 className="text-3xl font-semibold">{name}</h1>
-
-        {description && (
-          <p className="text-neutral-600 dark:text-neutral-300 max-w-2xl">
-            {description}
-          </p>
-        )}
-
-        {/* Raja üldpilt kuvatakse kirjelduse all */}
-        {course.imageUrl && (
-          <div className="mt-4">
-            <img
-              src={course.imageUrl}
-              alt={`${name} – raja üldpilt`}
-              className="w-full max-h-[600px] object-contain rounded-2xl border border-neutral-200 dark:border-neutral-800"
-            />
-          </div>
-        )}
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 flex flex-col gap-1">
-          <div className="text-xs uppercase text-neutral-500">
-            {t("course.traffic")}
-          </div>
-          <div className="text-3xl font-semibold">{activeCount}</div>
-          <div className="text-sm text-neutral-500">
-            {activeCount === 0 ? t("course.noPlayers") : t("course.playersNow")}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 flex flex-col gap-1">
-          <div className="text-xs uppercase text-neutral-500">
-            {t("course.holes")}
-          </div>
-          <div className="text-3xl font-semibold">{course.holes.length}</div>
-          <div className="text-sm text-neutral-500">
-            {t("course.totalPar")}: {totalPar}
-          </div>
-        </div>
-
-        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 flex flex-col gap-1">
-          <div className="text-xs uppercase text-neutral-500">
-            {t("course.weather")}
+        <div className="space-y-3">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+            <span>{countyLabel}</span>
+            {course.city && (
+              <>
+                <span aria-hidden="true">·</span>
+                <span>{course.city}</span>
+              </>
+            )}
           </div>
 
-          {weather ? (
-            <>
-              <div className="text-3xl font-semibold flex items-center gap-2">
-                <span>{weatherEmoji(weather.weatherCode)}</span>
-                <span>
-                  {weather.temperatureC != null
-                    ? `${Math.round(weather.temperatureC)}°C`
-                    : "—"}
-                </span>
-              </div>
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl lg:text-5xl">
+            {name}
+          </h1>
 
-              <div className="text-sm text-neutral-500">
-                {t("course.windSpeed")}:{" "}
-                {weather.windSpeedKmh != null
-                  ? `${Math.round(weather.windSpeedKmh)} km/h`
-                  : "—"}
-                {" · "}
-                {t("course.precipitation")}:{" "}
-                {weather.precipitationMm != null
-                  ? `${weather.precipitationMm} mm`
-                  : "—"}
-              </div>
-            </>
-          ) : (
-            <div className="text-sm text-neutral-500">—</div>
+          {description && (
+            <p className="max-w-3xl text-sm leading-relaxed text-neutral-600 dark:text-neutral-300 sm:text-base">
+              {description}
+            </p>
           )}
         </div>
-      </div>
 
+        {course.imageUrl && (
+          <div className="relative mt-5 overflow-hidden rounded-3xl border border-neutral-200 bg-neutral-100 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+            <img
+              src={course.imageUrl}
+              alt={`${name} – ${pageText.coursePhoto}`}
+              className="max-h-[420px] w-full object-cover"
+            />
+            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-4 pb-4 pt-12 sm:px-6 sm:pb-5">
+              <p className="text-sm font-semibold text-white">
+                {pageText.coursePhoto}
+              </p>
+            </div>
+          </div>
+        )}
+      </header>
+
+      {/* Kiirstatistika */}
+      <section
+        aria-label={pageText.courseDetails}
+        className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4"
+      >
+        <div className="flex items-center gap-4 rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:p-5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-500/10 text-2xl">
+            🥏
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              {pageText.players}
+            </p>
+            <p className="mt-1 text-2xl font-extrabold tabular-nums">
+              {activeCount}
+            </p>
+            <p className="text-xs text-neutral-500">
+              {activeCount === 0 ? pageText.noPlayers : pageText.playersNow}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:p-5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-blue-500/10 text-2xl">
+            🏁
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              {pageText.holes}
+            </p>
+            <p className="mt-1 text-2xl font-extrabold tabular-nums">
+              {course.holes.length}
+            </p>
+            <p className="text-xs text-neutral-500">
+              {pageText.totalPar}: {totalPar}
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-4 rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:p-5">
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-sky-500/10 text-2xl">
+            {weather ? weatherEmoji(weather.weatherCode) : "🌤️"}
+          </div>
+          <div className="min-w-0">
+            <p className="text-xs font-semibold uppercase tracking-wide text-neutral-500">
+              {pageText.weather}
+            </p>
+            <p className="mt-1 text-2xl font-extrabold tabular-nums">
+              {weather?.temperatureC != null
+                ? `${Math.round(weather.temperatureC)}°C`
+                : "—"}
+            </p>
+            <p className="text-xs text-neutral-500">
+              {pageText.wind}:{" "}
+              {weather?.windSpeedKmh != null
+                ? `${Math.round(weather.windSpeedKmh)} km/h`
+                : "—"}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Check-in */}
       <CheckInPanel
         courseId={course.id}
         initialCheckIn={
@@ -160,32 +217,83 @@ export default async function CoursePage({
         }
       />
 
+      {/* Raja seisukord */}
       <CourseActivityStats stats={activityStats} />
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div className="md:col-span-2 rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4">
-          <h2 className="text-lg font-semibold mb-3">{t("course.holes")}</h2>
+      <CourseRatingForm
+        courseId={course.id}
+        issues={activeIssues}
+        locale={locale}
+      />
 
-          <div className="overflow-x-auto">
+      {/* Raja augud ja kaart */}
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-3 lg:gap-6">
+        <div className="overflow-hidden rounded-3xl border border-neutral-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-900 lg:col-span-2">
+          <div className="border-b border-neutral-100 px-5 py-4 dark:border-neutral-800 sm:px-6">
+            <h2 className="text-lg font-bold">{t("course.holes")}</h2>
+            <p className="mt-1 text-xs text-neutral-500">
+              {course.holes.length} {pageText.holes.toLowerCase()} ·{" "}
+              {pageText.totalPar}: {totalPar}
+            </p>
+          </div>
+
+          {/* Mobiilivaade: augud kaartidena */}
+          <div className="grid grid-cols-2 gap-3 p-4 sm:hidden">
+            {course.holes.map((h) => (
+              <div
+                key={h.id}
+                className="rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-950"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-xs font-medium text-neutral-500">
+                    {pageText.hole}
+                  </span>
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/10 text-sm font-bold text-emerald-700 dark:text-emerald-300">
+                    {h.number}
+                  </span>
+                </div>
+                <div className="mt-3 flex items-end justify-between gap-2">
+                  <div>
+                    <p className="text-xs text-neutral-500">{pageText.par}</p>
+                    <p className="text-xl font-bold">{h.par}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-neutral-500">
+                      {pageText.distance}
+                    </p>
+                    <p className="text-sm font-semibold tabular-nums">
+                      {h.distance != null
+                        ? `${h.distance} ${pageText.meters}`
+                        : "—"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Suurem ekraan: tabel */}
+          <div className="hidden overflow-x-auto sm:block">
             <table className="w-full text-sm">
-              <thead className="text-neutral-500">
+              <thead className="bg-neutral-50 text-left text-xs uppercase tracking-wide text-neutral-500 dark:bg-neutral-950">
                 <tr>
-                  <th className="text-left py-2 pr-4">{t("course.hole")}</th>
-                  <th className="text-left py-2 pr-4">{t("course.par")}</th>
-                  <th className="text-left py-2">{t("course.distance")}</th>
+                  <th className="px-6 py-3">{pageText.hole}</th>
+                  <th className="px-6 py-3">{pageText.par}</th>
+                  <th className="px-6 py-3">{pageText.distance}</th>
                 </tr>
               </thead>
-
               <tbody>
                 {course.holes.map((h) => (
                   <tr
                     key={h.id}
                     className="border-t border-neutral-100 dark:border-neutral-800"
                   >
-                    <td className="py-2 pr-4 font-medium">{h.number}</td>
-                    <td className="py-2 pr-4">{h.par}</td>
-                    <td className="py-2 text-neutral-500">
-                      {h.distance != null ? `${h.distance} m` : "—"}
+                    <td className="px-6 py-3 font-semibold">{h.number}</td>
+                    <td className="px-6 py-3">{h.par}</td>
+                    <td className="px-6 py-3 text-neutral-500">
+                      {h.distance != null
+                        ? `${h.distance} ${pageText.meters}`
+                        : "—"}
                     </td>
                   </tr>
                 ))}
@@ -194,15 +302,43 @@ export default async function CoursePage({
           </div>
         </div>
 
-        <div className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-4 flex flex-col gap-3">
-          <CourseMiniMap
-            lat={course.latitude}
-            lng={course.longitude}
-            name={name}
-          />
-          <ReportIssueButton courseId={course.id} />
-        </div>
-      </div>
+        <aside className="flex flex-col gap-4 rounded-3xl border border-neutral-200 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:p-5">
+          <div>
+            <h2 className="mb-3 text-lg font-bold">
+              {isEnglish ? "Course location" : "Raja asukoht"}
+            </h2>
+            <CourseMiniMap
+              lat={course.latitude}
+              lng={course.longitude}
+              name={name}
+            />
+          </div>
+
+          <div className="border-t border-neutral-100 pt-4 dark:border-neutral-800">
+            <ReportIssueButton courseId={course.id} />
+          </div>
+
+          {weather && (
+            <div className="rounded-2xl bg-sky-50 p-4 dark:bg-sky-950/30">
+              <p className="text-sm font-semibold">{pageText.weather}</p>
+              <div className="mt-2 flex flex-wrap gap-x-4 gap-y-2 text-xs text-neutral-600 dark:text-neutral-300">
+                <span>
+                  💨 {pageText.wind}:{" "}
+                  {weather.windSpeedKmh != null
+                    ? `${Math.round(weather.windSpeedKmh)} km/h`
+                    : "—"}
+                </span>
+                <span>
+                  🌧️ {pageText.precipitation}:{" "}
+                  {weather.precipitationMm != null
+                    ? `${weather.precipitationMm} mm`
+                    : "—"}
+                </span>
+              </div>
+            </div>
+          )}
+        </aside>
+      </section>
     </div>
   );
 }
