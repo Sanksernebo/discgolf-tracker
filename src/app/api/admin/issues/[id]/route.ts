@@ -3,7 +3,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { getCurrentAdmin, canEditCourse, isSuperuser } from "@/lib/admin";
 
-const Body = z.object({ status: z.enum(["open", "closed"]) });
+const Body = z.object({ status: z.enum(["open", "in_progress", "closed"]) });
 
 export async function PATCH(
   req: Request,

@@ -4,7 +4,10 @@
     "tagline": "See courses, weather and live traffic before heading out"
   },
   "home": {
-    "currentlyAt": "Currently on course"
+    "currentlyAt": "Currently on course",
+    "searchLabel": "Search courses",
+    "searchPlaceholder": "Course name, city or county...",
+    "searchNoResults": "No matching courses found."
   },
   "legend": {
     "label": "Course traffic",
@@ -98,7 +101,72 @@
     "notFound": "Course not found",
     "backToCountyMap": "Back to {county} courses",
     "autoCheckedOut": "You've been checked out of the course (session ended).",
-    "selfCheckedOut": "You've left the course."
+    "selfCheckedOut": "You've left the course.",
+    "activity": {
+      "title": "When is this course usually busiest?",
+      "description": "Last {days} days · {checkIns} round starts",
+      "busiest": "Usually busiest",
+      "quietest": "Usually quieter",
+      "heatmapTitle": "Typical activity by weekday and time",
+      "weekdayLabel": "Day",
+      "less": "Less",
+      "more": "More",
+      "notEnoughData": "There isn't enough activity data for this course yet. As more rounds are recorded, we'll be able to show you when the course is busiest.",
+      "disclaimer": "Based on round start times and group size. This shows typical activity, not the live number of players on the course.",
+      "cellTooltip": "{weekday}, {time}: {players} players · {checkIns} check-ins",
+      "weekdays": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+      },
+      "mobileTitle": "Activity by day",
+      "mobileHint": "Choose a day to see typical activity by time.",
+      "mobilePlayers": "{count} players",
+      "noActivity": "Little data",
+      "peakLabel": "busiest time",
+      "showAllStats": "View all statistics",
+      "hideAllStats": "Hide extra statistics",
+      "weekdayShort": {
+        "monday": "M",
+        "tuesday": "T",
+        "wednesday": "W",
+        "thursday": "T",
+        "friday": "F",
+        "saturday": "S",
+        "sunday": "S"
+      }
+    },
+
+    "rating": {
+      "title": "Course rating",
+      "overall": "Overall",
+      "maintenance": "Maintenance",
+      "teeArea": "Tee condition",
+      "experience": "Playing experience",
+      "submit": "Submit",
+      "update": "Update",
+      "loading": "Loading…",
+      "noRatings": "No ratings yet.",
+      "checkInRequired": "You must have been active on this course recently to rate it.",
+      "saved": "Saved!",
+      "error": "Could not save rating.",
+      "count": "ratings",
+      "average": "Average",
+      "activeReports": "{count, plural, =0 {No active reports} =1 {# active report} other {# active reports}}",
+      "latestReports": "Latest reports",
+      "report": "Report",
+      "showLess": "Show less",
+      "showAll": "Show all ({count})",
+      "close": "Close",
+      "editRating": "Edit rating",
+      "rateCourse": "Rate this course",
+      "ratingInstructions": "Rate each category from 1 to 5.",
+      "starLabel": "{value} out of 5 stars"
+    }
   },
   "checkin": {
     "checkingIn": "Checking you in...",
@@ -117,7 +185,19 @@
     "submit": "Send",
     "cancel": "Cancel",
     "success": "Thanks! Report sent.",
-    "error": "Failed to send"
+    "error": "Failed to send",
+    "typeLabel": "Issue type",
+    "types": {
+      "broken_basket": "Broken basket",
+      "course_maintenance": "Course maintenance",
+      "tee_area": "Tee area problem",
+      "signage": "Broken sign or information board",
+      "obstacle": "Obstacle on the course",
+      "litter": "Litter or full bin",
+      "other_course": "Other course issue",
+      "app_bug": "App bug",
+      "other": "Other issue"
+    }
   },
   "admin": {
     "title": "Admin panel",
@@ -247,7 +327,26 @@
     "setNewPassword": "Set new password",
     "resetPasswordDone": "Your password has been changed. You can now sign in with it.",
     "resetLinkInvalid": "This reset link is invalid or has expired.",
-    "requestNewLink": "Request a new link"
+    "requestNewLink": "Request a new link",
+    "issueInProgress": "In progress",
+    "issueChangeStatus": "Change status",
+    "issueFilterStatus": "Status",
+    "issueFilterType": "Issue type",
+    "issueFilterCourse": "Course",
+    "issueFilterAll": "All",
+    "issueFilterResults": "Reports found: {count}",
+    "noFilteredIssues": "No reports match the selected filters.",
+    "issueNoCourse": "No course assigned",
+    "issueTypeUnassigned": "Unassigned",
+    "issueType_broken_basket": "Broken basket",
+    "issueType_course_maintenance": "Course maintenance",
+    "issueType_tee_area": "Tee area problem",
+    "issueType_signage": "Broken sign or information board",
+    "issueType_obstacle": "Obstacle on the course",
+    "issueType_litter": "Litter or full bin",
+    "issueType_other_course": "Other course issue",
+    "issueType_app_bug": "App bug",
+    "issueType_other": "Other issue"
   },
   "common": {
     "loading": "Loading...",

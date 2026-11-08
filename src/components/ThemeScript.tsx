@@ -1,9 +1,9 @@
 /**
- * Inline, blocking script that runs before React hydrates so the initial
- * paint uses the correct theme (no FOUC / hydration mismatch on <html>).
- * Reads localStorage.theme ("light" | "dark" | "system"; default "system").
+ * Runs before React hydrates so the initial page uses the correct theme.
+ * An explicit "light" or "dark" choice is respected; otherwise follows
+ * the operating system preference.
  */
-const script = `(function(){try{var t=localStorage.getItem('theme')||'system';var m=window.matchMedia('(prefers-color-scheme: dark)');var d=t==='dark'||(t==='system'&&m.matches);document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=t;}catch(e){}})();`;
+const script = `(function(){try{var t=localStorage.getItem('theme');var m=window.matchMedia('(prefers-color-scheme: dark)');var d=t==='dark'||((t!=='light')&&m.matches);var r=d?'dark':'light';document.documentElement.classList.toggle('dark',d);document.documentElement.dataset.theme=r;}catch(e){}})();`;
 
 export function ThemeScript() {
   return <script dangerouslySetInnerHTML={{ __html: script }} />;

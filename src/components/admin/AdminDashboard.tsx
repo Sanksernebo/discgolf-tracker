@@ -7,12 +7,14 @@ import { CourseEditor, type CourseWithHoles } from "./CourseEditor";
 import { CourseQr } from "./CourseQr";
 import { AdminUsers } from "./AdminUsers";
 import { AdminAnalytics } from "./AdminAnalytics";
+import { AdminIssues } from "./AdminIssues";
 import { ESTONIAN_COUNTIES } from "@/lib/constants";
 
 type Issue = {
   id: string;
   courseId: string | null;
   category: string;
+  issueType: string | null;
   message: string;
   status: string;
   createdAt: string;
@@ -154,8 +156,7 @@ export function AdminDashboard() {
           ) : (
             <ul className="flex flex-col gap-2">
               {courses.map((c) => {
-                const county =
-                  ESTONIAN_COUNTIES[c.county]?.et ?? c.county;
+                const county = ESTONIAN_COUNTIES[c.county]?.et ?? c.county;
                 return (
                   <li
                     key={c.id}
@@ -207,58 +208,7 @@ export function AdminDashboard() {
       )}
 
       {!loading && tab === "issues" && (
-        <div className="flex flex-col gap-2">
-          {issues.length === 0 ? (
-            <div className="text-sm text-neutral-500">{t("noIssues")}</div>
-          ) : (
-            issues.map((i) => (
-              <div
-                key={i.id}
-                className="rounded-2xl border border-neutral-200 dark:border-neutral-800 p-3 flex items-start justify-between gap-3 flex-wrap"
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 text-xs flex-wrap">
-                    <span
-                      className={
-                        (i.status === "open"
-                          ? "bg-red-100 text-red-700 dark:bg-red-950 dark:text-red-300"
-                          : "bg-neutral-200 text-neutral-600 dark:bg-neutral-800 dark:text-neutral-400") +
-                        " px-2 py-0.5 rounded-full uppercase font-medium"
-                      }
-                    >
-                      {i.status === "open" ? t("openIssue") : t("closedIssue")}
-                    </span>
-                    <span className="text-neutral-500">
-                      {new Date(i.createdAt).toLocaleString()}
-                    </span>
-                    <span className="text-neutral-500">·</span>
-                    <span className="text-neutral-600 dark:text-neutral-300">
-                      {i.category}
-                    </span>
-                    {i.course && (
-                      <>
-                        <span className="text-neutral-500">·</span>
-                        <span className="text-neutral-600 dark:text-neutral-300">
-                          {i.course.nameEt}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <div className="mt-1 text-sm whitespace-pre-wrap">
-                    {i.message}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => toggleIssue(i)}
-                  className="text-xs px-3 py-1.5 rounded-full border border-neutral-300 dark:border-neutral-700 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition min-h-11"
-                >
-                  {i.status === "open" ? t("markClosed") : t("markOpen")}
-                </button>
-              </div>
-            ))
-          )}
-        </div>
+        <AdminIssues issues={issues} onChanged={loadIssues} />
       )}
 
       {!loading && tab === "analytics" && me && (

@@ -4,7 +4,10 @@
     "tagline": "Vaata radu, ilma ja liiklust enne mängima minekut"
   },
   "home": {
-    "currentlyAt": "Praegu rajal"
+    "currentlyAt": "Praegu rajal",
+    "searchLabel": "Otsi rada",
+    "searchPlaceholder": "Raja nimi, linn või maakond...",
+    "searchNoResults": "Sobivaid radu ei leitud."
   },
   "legend": {
     "label": "Rajaliiklus",
@@ -98,7 +101,72 @@
     "notFound": "Rada ei leitud",
     "backToCountyMap": "Tagasi {county} radade juurde",
     "autoCheckedOut": "Sind on rajalt maha märgitud (aeg sai täis).",
-    "selfCheckedOut": "Sa oled rajalt lahkunud."
+    "selfCheckedOut": "Sa oled rajalt lahkunud.",
+    "activity": {
+      "title": "Millal on rajal kõige rohkem mängijaid?",
+      "description": "Viimase {days} päeva statistika · {checkIns} mänguringi algust",
+      "busiest": "Tavaliselt aktiivseim",
+      "quietest": "Tavaliselt rahulikum",
+      "heatmapTitle": "Tavapärane aktiivsus nädalapäevade ja kellaaegade lõikes",
+      "weekdayLabel": "Päev",
+      "less": "Vähem",
+      "more": "Rohkem",
+      "notEnoughData": "Selle raja mängijate aktiivsuse kohta pole veel piisavalt andmeid. Kogume rohkem mängukordi ja peagi saame näidata, millal on rajal kõige rohkem mängijaid.",
+      "disclaimer": "Statistika põhineb mänguringide algusaegadel ja grupi suurusel. See näitab tavapärast aktiivsust, mitte reaalajas rajal olevate mängijate arvu.",
+      "cellTooltip": "{weekday}, {time}: {players} mängijat · {checkIns} registreerimist",
+      "weekdays": {
+        "monday": "Esmaspäev",
+        "tuesday": "Teisipäev",
+        "wednesday": "Kolmapäev",
+        "thursday": "Neljapäev",
+        "friday": "Reede",
+        "saturday": "Laupäev",
+        "sunday": "Pühapäev"
+      },
+      "mobileTitle": "Aktiivsus päevade kaupa",
+      "mobileHint": "Vali päev, et näha tavapärast aktiivsust kellaaegade lõikes.",
+      "mobilePlayers": "{count} mängijat",
+      "noActivity": "Vähe andmeid",
+      "peakLabel": "aktiivseim aeg",
+      "showAllStats": "Vaata kogu statistikat",
+      "hideAllStats": "Peida lisastatistika",
+      "weekdayShort": {
+        "monday": "E",
+        "tuesday": "T",
+        "wednesday": "K",
+        "thursday": "N",
+        "friday": "R",
+        "saturday": "L",
+        "sunday": "P"
+      }
+    },
+
+    "rating": {
+      "title": "Raja hinnang",
+      "overall": "Üldhinnang",
+      "maintenance": "Hooldus",
+      "teeArea": "Teepadade seisukord",
+      "experience": "Mängukogemus",
+      "submit": "Salvesta",
+      "update": "Uuenda",
+      "loading": "Laadin…",
+      "noRatings": "Hinnanguid pole veel.",
+      "checkInRequired": "Hinnangu muutmiseks pead olema rajal hiljuti aktiivne.",
+      "saved": "Salvestatud!",
+      "error": "Salvestamine ebaõnnestus.",
+      "count": "hinnangut",
+      "average": "Keskmine",
+      "activeReports": "{count, plural, =0 {Aktiivseid teateid pole} =1 {# aktiivne teade} other {# aktiivset teadet}}",
+      "latestReports": "Viimased probleemid",
+      "report": "Teade",
+      "showLess": "Näita vähem",
+      "showAll": "Näita kõiki ({count})",
+      "close": "Sulge",
+      "editRating": "Muuda hinnangut",
+      "rateCourse": "Anna rajale hinnang",
+      "ratingInstructions": "Hinda iga kategooriat skaalal 1–5.",
+      "starLabel": "{value} / 5 tärni"
+    }
   },
   "checkin": {
     "checkingIn": "Registreerin rajale...",
@@ -117,7 +185,19 @@
     "submit": "Saada",
     "cancel": "Tühista",
     "success": "Aitäh! Teade on saadetud.",
-    "error": "Viga saatmisel"
+    "error": "Viga saatmisel",
+    "typeLabel": "Probleemi täpsustus",
+    "types": {
+      "broken_basket": "Korv katki",
+      "course_maintenance": "Rada hooldamata",
+      "tee_area": "Tiiala probleem",
+      "signage": "Silt või infotahvel katki",
+      "obstacle": "Takistus rajal",
+      "litter": "Prügi või prügikast",
+      "other_course": "Muu rajaprobleem",
+      "app_bug": "Rakenduse viga",
+      "other": "Muu probleem"
+    }
   },
   "admin": {
     "title": "Halduspaneel",
@@ -247,7 +327,26 @@
     "setNewPassword": "Määra uus parool",
     "resetPasswordDone": "Parool on muudetud. Nüüd saad sellega sisse logida.",
     "resetLinkInvalid": "See lähtestamise link on vigane või aegunud.",
-    "requestNewLink": "Küsi uus link"
+    "requestNewLink": "Küsi uus link",
+    "issueInProgress": "Töös",
+    "issueChangeStatus": "Muuda olekut",
+    "issueFilterStatus": "Olek",
+    "issueFilterType": "Probleemi tüüp",
+    "issueFilterCourse": "Rada",
+    "issueFilterAll": "Kõik",
+    "issueFilterResults": "Leitud teateid: {count}",
+    "noFilteredIssues": "Valitud filtritega teateid ei leitud.",
+    "issueNoCourse": "Rada pole määratud",
+    "issueTypeUnassigned": "Määramata",
+    "issueType_broken_basket": "Korv katki",
+    "issueType_course_maintenance": "Rada hooldamata",
+    "issueType_tee_area": "Tiiala probleem",
+    "issueType_signage": "Silt või infotahvel katki",
+    "issueType_obstacle": "Takistus rajal",
+    "issueType_litter": "Prügi või prügikast",
+    "issueType_other_course": "Muu rajaprobleem",
+    "issueType_app_bug": "Rakenduse viga",
+    "issueType_other": "Muu probleem"
   },
   "common": {
     "loading": "Laadin...",
