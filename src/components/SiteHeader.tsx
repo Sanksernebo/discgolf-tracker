@@ -37,6 +37,12 @@ export async function SiteHeader() {
           >
             {t("nav.home")}
           </Link>
+          <Link
+            href="/faq"
+            className="px-2 py-1 rounded hover:text-emerald-600 transition-colors min-h-11 inline-flex items-center"
+          >
+            {t("nav.faq")}
+          </Link>
           {admin && (
             <Link
               href="/admin"

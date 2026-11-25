@@ -3,52 +3,62 @@
 import { useEffect, useState } from "react";
 import { useTranslations } from "next-intl";
 
-type Theme = "light" | "dark" | "system";
+type Theme = "light" | "dark";
+type StoredTheme = Theme | "system" | null;
+
+function getSystemTheme(): Theme {
+  return window.matchMedia("(prefers-color-scheme: dark)").matches
+    ? "dark"
+    : "light";
+}
 
 function applyTheme(theme: Theme) {
-  const isDark =
-    theme === "dark" ||
-    (theme === "system" &&
-      window.matchMedia("(prefers-color-scheme: dark)").matches);
-  document.documentElement.classList.toggle("dark", isDark);
+  document.documentElement.classList.toggle("dark", theme === "dark");
   document.documentElement.dataset.theme = theme;
 }
 
 export function ThemeToggle() {
   const t = useTranslations("theme");
-  const [theme, setTheme] = useState<Theme>("system");
+  const [theme, setTheme] = useState<Theme>("light");
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    const stored = (localStorage.getItem("theme") as Theme | null) ?? "system";
-    setTheme(stored);
-    setMounted(true);
-    // Re-apply on mount as well as at initial page load. next-intl's
-    // language switch re-renders the root layout with a fresh server
-    // response that has no .dark class on <html>; without this, React
-    // reconciles the class off and the theme silently flips.
-    applyTheme(stored);
+    const stored = localStorage.getItem("theme") as StoredTheme;
+    const initialTheme =
+      stored === "light" || stored === "dark" ? stored : getSystemTheme();
 
-    // React to system-preference changes while on "system".
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    const listener = () => {
-      if ((localStorage.getItem("theme") as Theme | null) === "system") {
-        applyTheme("system");
+    setTheme(initialTheme);
+    setMounted(true);
+    applyTheme(initialTheme);
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+
+    function handleSystemThemeChange() {
+      const currentStored = localStorage.getItem("theme") as StoredTheme;
+
+      // Follow the system only when the user has not explicitly chosen a theme.
+      if (currentStored !== "light" && currentStored !== "dark") {
+        const systemTheme = getSystemTheme();
+        setTheme(systemTheme);
+        applyTheme(systemTheme);
       }
+    }
+
+    mediaQuery.addEventListener("change", handleSystemThemeChange);
+
+    return () => {
+      mediaQuery.removeEventListener("change", handleSystemThemeChange);
     };
-    mq.addEventListener("change", listener);
-    return () => mq.removeEventListener("change", listener);
   }, []);
 
-  function choose(next: Theme) {
-    setTheme(next);
-    localStorage.setItem("theme", next);
-    applyTheme(next);
+  function choose(nextTheme: Theme) {
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
+    applyTheme(nextTheme);
   }
 
   const options: { key: Theme; icon: string; label: string }[] = [
     { key: "light", icon: "☀", label: t("light") },
-    { key: "system", icon: "◐", label: t("system") },
     { key: "dark", icon: "☾", label: t("dark") },
   ];
 
@@ -56,26 +66,27 @@ export function ThemeToggle() {
     <div
       role="group"
       aria-label={t("label")}
-      className="flex items-center gap-0.5 rounded-full border border-neutral-200 dark:border-neutral-700 p-0.5"
+      className="flex items-center gap-0.5 rounded-full border border-neutral-200 p-0.5 dark:border-neutral-700"
     >
-      {options.map((o) => {
-        const active = mounted && theme === o.key;
+      {options.map((option) => {
+        const active = mounted && theme === option.key;
+
         return (
           <button
-            key={o.key}
+            key={option.key}
             type="button"
-            onClick={() => choose(o.key)}
+            onClick={() => choose(option.key)}
             aria-pressed={active}
-            aria-label={o.label}
-            title={o.label}
+            aria-label={option.label}
+            title={option.label}
             className={
               (active
                 ? "bg-emerald-500 text-white"
-                : "text-neutral-600 dark:text-neutral-300 hover:text-emerald-600") +
-              " h-8 w-8 grid place-items-center rounded-full text-sm transition"
+                : "text-neutral-600 hover:text-emerald-600 dark:text-neutral-300") +
+              " grid h-8 w-8 place-items-center rounded-full text-sm transition"
             }
           >
-            <span aria-hidden>{o.icon}</span>
+            <span aria-hidden="true">{option.icon}</span>
           </button>
         );
       })}

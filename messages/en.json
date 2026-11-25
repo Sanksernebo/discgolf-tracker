@@ -4,7 +4,10 @@
     "tagline": "See courses, weather and live traffic before heading out"
   },
   "home": {
-    "currentlyAt": "Currently on course"
+    "currentlyAt": "Currently on course",
+    "searchLabel": "Search courses",
+    "searchPlaceholder": "Course name, city or county...",
+    "searchNoResults": "No matching courses found."
   },
   "legend": {
     "label": "Course traffic",
@@ -17,7 +20,8 @@
     "primary": "Primary",
     "home": "Map",
     "admin": "Admin",
-    "reportIssue": "Report an issue"
+    "reportIssue": "Report an issue",
+    "faq": "FAQ"
   },
   "a11y": {
     "skipToContent": "Skip to main content",
@@ -98,7 +102,72 @@
     "notFound": "Course not found",
     "backToCountyMap": "Back to {county} courses",
     "autoCheckedOut": "You've been checked out of the course (session ended).",
-    "selfCheckedOut": "You've left the course."
+    "selfCheckedOut": "You've left the course.",
+    "activity": {
+      "title": "When is this course usually busiest?",
+      "description": "Last {days} days · {checkIns} round starts",
+      "busiest": "Usually busiest",
+      "quietest": "Usually quieter",
+      "heatmapTitle": "Typical activity by weekday and time",
+      "weekdayLabel": "Day",
+      "less": "Less",
+      "more": "More",
+      "notEnoughData": "There isn't enough activity data for this course yet. As more rounds are recorded, we'll be able to show you when the course is busiest.",
+      "disclaimer": "Based on round start times and group size. This shows typical activity, not the live number of players on the course.",
+      "cellTooltip": "{weekday}, {time}: {players} players · {checkIns} check-ins",
+      "weekdays": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+      },
+      "mobileTitle": "Activity by day",
+      "mobileHint": "Choose a day to see typical activity by time.",
+      "mobilePlayers": "{count} players",
+      "noActivity": "Little data",
+      "peakLabel": "busiest time",
+      "showAllStats": "View all statistics",
+      "hideAllStats": "Hide extra statistics",
+      "weekdayShort": {
+        "monday": "M",
+        "tuesday": "T",
+        "wednesday": "W",
+        "thursday": "T",
+        "friday": "F",
+        "saturday": "S",
+        "sunday": "S"
+      }
+    },
+
+    "rating": {
+      "title": "Course rating",
+      "overall": "Overall",
+      "maintenance": "Maintenance",
+      "teeArea": "Tee condition",
+      "experience": "Playing experience",
+      "submit": "Submit",
+      "update": "Update",
+      "loading": "Loading…",
+      "noRatings": "No ratings yet.",
+      "checkInRequired": "You must have been active on this course recently to rate it.",
+      "saved": "Saved!",
+      "error": "Could not save rating.",
+      "count": "ratings",
+      "average": "Average",
+      "activeReports": "{count, plural, =0 {No active reports} =1 {# active report} other {# active reports}}",
+      "latestReports": "Latest reports",
+      "report": "Report",
+      "showLess": "Show less",
+      "showAll": "Show all ({count})",
+      "close": "Close",
+      "editRating": "Edit rating",
+      "rateCourse": "Rate this course",
+      "ratingInstructions": "Rate each category from 1 to 5.",
+      "starLabel": "{value} out of 5 stars"
+    }
   },
   "checkin": {
     "checkingIn": "Checking you in...",
@@ -117,7 +186,19 @@
     "submit": "Send",
     "cancel": "Cancel",
     "success": "Thanks! Report sent.",
-    "error": "Failed to send"
+    "error": "Failed to send",
+    "typeLabel": "Issue type",
+    "types": {
+      "broken_basket": "Broken basket",
+      "course_maintenance": "Course maintenance",
+      "tee_area": "Tee area problem",
+      "signage": "Broken sign or information board",
+      "obstacle": "Obstacle on the course",
+      "litter": "Litter or full bin",
+      "other_course": "Other course issue",
+      "app_bug": "App bug",
+      "other": "Other issue"
+    }
   },
   "admin": {
     "title": "Admin panel",
@@ -247,7 +328,72 @@
     "setNewPassword": "Set new password",
     "resetPasswordDone": "Your password has been changed. You can now sign in with it.",
     "resetLinkInvalid": "This reset link is invalid or has expired.",
-    "requestNewLink": "Request a new link"
+    "requestNewLink": "Request a new link",
+    "issueInProgress": "In progress",
+    "issueChangeStatus": "Change status",
+    "issueFilterStatus": "Status",
+    "issueFilterType": "Issue type",
+    "issueFilterCourse": "Course",
+    "issueFilterAll": "All",
+    "issueFilterResults": "Reports found: {count}",
+    "noFilteredIssues": "No reports match the selected filters.",
+    "issueNoCourse": "No course assigned",
+    "issueTypeUnassigned": "Unassigned",
+    "issueType_broken_basket": "Broken basket",
+    "issueType_course_maintenance": "Course maintenance",
+    "issueType_tee_area": "Tee area problem",
+    "issueType_signage": "Broken sign or information board",
+    "issueType_obstacle": "Obstacle on the course",
+    "issueType_litter": "Litter or full bin",
+    "issueType_other_course": "Other course issue",
+    "issueType_app_bug": "App bug",
+    "issueType_other": "Other issue",
+
+    "courseNotices": {
+      "manageButton": "Notices",
+      "title": "Course notices",
+      "close": "Close",
+      "addNotice": "Add new notice",
+      "editNotice": "Edit notice",
+      "type": "Notice type",
+      "types": {
+        "info": "Information",
+        "event": "Event",
+        "maintenance": "Maintenance",
+        "closed": "Course closed"
+      },
+      "titleEt": "Title in Estonian",
+      "titleEn": "Title in English",
+      "messageEt": "Message in Estonian",
+      "messageEn": "Message in English",
+      "startsAt": "Display starts",
+      "endsAt": "Display ends",
+      "active": "Notice is active",
+      "saving": "Saving...",
+      "saveChanges": "Save changes",
+      "cancel": "Cancel editing",
+      "existingNotices": "Existing notices",
+      "loading": "Loading notices...",
+      "noNotices": "There are no notices for this course yet.",
+      "activeStatus": "Active",
+      "inactiveStatus": "Inactive",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Delete notice \"{title}\"?",
+      "loadError": "Failed to load notices.",
+      "saveError": "Failed to save notice.",
+      "deleteError": "Failed to delete notice.",
+      "dateError": "The end time cannot be earlier than the start time."
+    }
+  },
+  "courseNotices": {
+    "heading": "Course notices",
+    "types": {
+      "info": "Information",
+      "event": "Event",
+      "maintenance": "Maintenance",
+      "closed": "Course closed"
+    }
   },
   "common": {
     "loading": "Loading...",
@@ -255,6 +401,34 @@
     "cancel": "Cancel",
     "close": "Close",
     "back": "Back"
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "intro": "Find answers about using Disc Golf Tracker, courses, data and privacy.",
+    "coursesTitle": "Courses",
+    "coursesMissingQ": "Why aren't all disc golf courses listed?",
+    "coursesMissingA": "The app currently displays courses that have been added to the system. The list is gradually expanding. If your local course is missing, please let us know.",
+    "coursesAddQ": "How can a new course be added?",
+    "coursesAddA": "New courses are added by the app administrators. You can let us know about a missing course at info@digiarendus.ee.",
+    "dataTitle": "Data and privacy",
+    "dataTrackedQ": "What data does the app track?",
+    "dataTrackedA": "When you check in, the app stores the course, timestamp, group size and an anonymous device ID. This data is used to show live player counts and calculate aggregated statistics.",
+    "locationQ": "Does the app track my location?",
+    "locationA": "The app does not store your GPS route. A check-in is associated with the course you select. OpenStreetMap, the map provider, may see your IP address when map tiles are loaded.",
+    "deviceIdQ": "What is an anonymous device ID?",
+    "deviceIdA": "It is a randomly generated identifier stored in your browser when you check in to a course. It links visits from the same device without using your name or contact details.",
+    "checkinTitle": "Course visits",
+    "checkinQ": "How does course check-in work?",
+    "checkinA": "Open a course page and press the check-in button. Your activity is updated during the visit, allowing the app to show how many players are currently on the course.",
+    "checkinDataQ": "Can other users see my visit?",
+    "checkinDataA": "Other users can see the total number of players on the course, but not your name or personal contact details.",
+    "ratingsTitle": "Ratings and issue reports",
+    "ratingQ": "How can I rate a course?",
+    "ratingA": "Your device must have been recently active on that course. You can rate the overall experience, maintenance and tee areas. You can edit your rating for up to three days after your last activity on the course.",
+    "issueQ": "How can I report a problem with a course?",
+    "issueA": "Use the \"Report an issue\" button on the course page. Select an issue type and provide as much detail as possible. The report is sent to the course administrators for review.",
+    "conditionQ": "Who sets the official course condition?",
+    "conditionA": "The official course condition is set by the course administrator or a superuser. This is separate from visitor ratings."
   },
   "privacy": {
     "title": "Privacy policy",

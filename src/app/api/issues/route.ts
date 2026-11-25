@@ -8,6 +8,19 @@ const Body = z.object({
   courseId: z.string().min(1).nullable().optional(),
   category: z.enum(["course", "app", "other"]),
   message: z.string().min(3).max(2000),
+  issueType: z
+    .enum([
+      "broken_basket",
+      "course_maintenance",
+      "tee_area",
+      "signage",
+      "obstacle",
+      "litter",
+      "other_course",
+      "app_bug",
+      "other",
+    ])
+    .optional(),
 });
 
 export async function POST(req: Request) {
@@ -16,13 +29,14 @@ export async function POST(req: Request) {
   if (!parsed.success) {
     return NextResponse.json({ error: "invalid_body" }, { status: 400 });
   }
-  const { courseId, category, message } = parsed.data;
+  const { courseId, category, issueType, message } = parsed.data;
   const deviceId = await getDeviceId();
 
   const created = await prisma.issueReport.create({
     data: {
       courseId: courseId ?? null,
       category,
+      issueType: issueType ?? null,
       message,
       deviceId,
     },
@@ -39,8 +53,7 @@ export async function GET() {
   // Course admins only see reports on their courses; app-level (courseId=null)
   // reports remain superuser-only so nobody accidentally sees a rant that
   // wasn't scoped to them.
-  const where =
-    scope === null ? {} : { courseId: { in: scope } };
+  const where = scope === null ? {} : { courseId: { in: scope } };
   const issues = await prisma.issueReport.findMany({
     where,
     orderBy: { createdAt: "desc" },

@@ -5,6 +5,31 @@ import { useTranslations } from "next-intl";
 
 type Category = "course" | "app" | "other";
 
+type IssueType =
+  | "broken_basket"
+  | "course_maintenance"
+  | "tee_area"
+  | "signage"
+  | "obstacle"
+  | "litter"
+  | "other_course"
+  | "app_bug"
+  | "other";
+
+const issueTypes: Record<Category, IssueType[]> = {
+  course: [
+    "broken_basket",
+    "course_maintenance",
+    "tee_area",
+    "signage",
+    "obstacle",
+    "litter",
+    "other_course",
+  ],
+  app: ["app_bug"],
+  other: ["other"],
+};
+
 export function ReportIssueButton({
   courseId,
   variant = "block",
@@ -13,19 +38,24 @@ export function ReportIssueButton({
   variant?: "block" | "link";
 }) {
   const t = useTranslations();
+
   const [open, setOpen] = useState(false);
   const [category, setCategory] = useState<Category>(
     courseId ? "course" : "app",
+  );
+  const [issueType, setIssueType] = useState<IssueType>(
+    courseId ? "broken_basket" : "app_bug",
   );
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [sent, setSent] = useState(false);
+
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
-    // Focus the first focusable element (the close button) when the dialog opens.
+
     const el = dialogRef.current?.querySelector<HTMLElement>(
       "button, input, textarea, select, [tabindex]",
     );
@@ -34,26 +64,33 @@ export function ReportIssueButton({
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") close();
     }
+
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
+
     if (message.trim().length < 3) return;
+
     setBusy(true);
     setError(null);
+
     try {
       const res = await fetch("/api/issues", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
-          courseId: category === "course" ? courseId ?? null : null,
+          courseId: category === "course" ? (courseId ?? null) : null,
           category,
+          issueType,
           message: message.trim(),
         }),
       });
+
       if (!res.ok) throw new Error("send_failed");
+
       setSent(true);
       setMessage("");
     } catch {
@@ -67,6 +104,11 @@ export function ReportIssueButton({
     setOpen(false);
     setSent(false);
     setError(null);
+  }
+
+  function changeCategory(value: Category) {
+    setCategory(value);
+    setIssueType(issueTypes[value][0]);
   }
 
   return (
@@ -106,6 +148,7 @@ export function ReportIssueButton({
               <h2 id="issue-title" className="text-lg font-semibold">
                 {t("issue.title")}
               </h2>
+
               <button
                 type="button"
                 onClick={close}
@@ -126,15 +169,17 @@ export function ReportIssueButton({
                   <label className="text-xs uppercase text-neutral-500">
                     {t("issue.categoryLabel")}
                   </label>
+
                   <div className="flex flex-wrap gap-2">
                     {(["course", "app", "other"] as const).map((c) => {
                       const disabled = c === "course" && !courseId;
+
                       return (
                         <button
                           key={c}
                           type="button"
                           disabled={disabled}
-                          onClick={() => setCategory(c)}
+                          onClick={() => changeCategory(c)}
                           className={
                             (category === c
                               ? "bg-emerald-500 text-white border-emerald-500"
@@ -159,11 +204,34 @@ export function ReportIssueButton({
 
                 <div className="flex flex-col gap-1">
                   <label
+                    htmlFor="issue-type"
+                    className="text-xs uppercase text-neutral-500"
+                  >
+                    {t("issue.typeLabel")}
+                  </label>
+
+                  <select
+                    id="issue-type"
+                    value={issueType}
+                    onChange={(e) => setIssueType(e.target.value as IssueType)}
+                    className="rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-2 text-sm focus:outline-none focus:border-emerald-500"
+                  >
+                    {issueTypes[category].map((type) => (
+                      <option key={type} value={type}>
+                        {t(`issue.types.${type}`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex flex-col gap-1">
+                  <label
                     htmlFor="issue-msg"
                     className="text-xs uppercase text-neutral-500"
                   >
                     {t("issue.descriptionLabel")}
                   </label>
+
                   <textarea
                     id="issue-msg"
                     value={message}
@@ -176,9 +244,7 @@ export function ReportIssueButton({
                   />
                 </div>
 
-                {error && (
-                  <div className="text-sm text-red-600">{error}</div>
-                )}
+                {error && <div className="text-sm text-red-600">{error}</div>}
 
                 <div className="flex justify-end gap-2">
                   <button
@@ -188,12 +254,13 @@ export function ReportIssueButton({
                   >
                     {t("issue.cancel")}
                   </button>
+
                   <button
                     type="submit"
                     disabled={busy || message.trim().length < 3}
                     className="px-4 py-2 text-sm rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition disabled:opacity-50"
                   >
-                    {t("issue.submit")}
+                    {busy ? "..." : t("issue.submit")}
                   </button>
                 </div>
               </form>

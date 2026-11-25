@@ -4,7 +4,10 @@
     "tagline": "Vaata radu, ilma ja liiklust enne mängima minekut"
   },
   "home": {
-    "currentlyAt": "Praegu rajal"
+    "currentlyAt": "Praegu rajal",
+    "searchLabel": "Otsi rada",
+    "searchPlaceholder": "Raja nimi, linn või maakond...",
+    "searchNoResults": "Sobivaid radu ei leitud."
   },
   "legend": {
     "label": "Rajaliiklus",
@@ -17,7 +20,8 @@
     "primary": "Peamenüü",
     "home": "Kaart",
     "admin": "Admin",
-    "reportIssue": "Teata probleemist"
+    "reportIssue": "Teata probleemist",
+    "faq": "KKK"
   },
   "a11y": {
     "skipToContent": "Liigu põhisisu juurde",
@@ -98,7 +102,72 @@
     "notFound": "Rada ei leitud",
     "backToCountyMap": "Tagasi {county} radade juurde",
     "autoCheckedOut": "Sind on rajalt maha märgitud (aeg sai täis).",
-    "selfCheckedOut": "Sa oled rajalt lahkunud."
+    "selfCheckedOut": "Sa oled rajalt lahkunud.",
+    "activity": {
+      "title": "Millal on rajal kõige rohkem mängijaid?",
+      "description": "Viimase {days} päeva statistika · {checkIns} mänguringi algust",
+      "busiest": "Tavaliselt aktiivseim",
+      "quietest": "Tavaliselt rahulikum",
+      "heatmapTitle": "Tavapärane aktiivsus nädalapäevade ja kellaaegade lõikes",
+      "weekdayLabel": "Päev",
+      "less": "Vähem",
+      "more": "Rohkem",
+      "notEnoughData": "Selle raja mängijate aktiivsuse kohta pole veel piisavalt andmeid. Kogume rohkem mängukordi ja peagi saame näidata, millal on rajal kõige rohkem mängijaid.",
+      "disclaimer": "Statistika põhineb mänguringide algusaegadel ja grupi suurusel. See näitab tavapärast aktiivsust, mitte reaalajas rajal olevate mängijate arvu.",
+      "cellTooltip": "{weekday}, {time}: {players} mängijat · {checkIns} registreerimist",
+      "weekdays": {
+        "monday": "Esmaspäev",
+        "tuesday": "Teisipäev",
+        "wednesday": "Kolmapäev",
+        "thursday": "Neljapäev",
+        "friday": "Reede",
+        "saturday": "Laupäev",
+        "sunday": "Pühapäev"
+      },
+      "mobileTitle": "Aktiivsus päevade kaupa",
+      "mobileHint": "Vali päev, et näha tavapärast aktiivsust kellaaegade lõikes.",
+      "mobilePlayers": "{count} mängijat",
+      "noActivity": "Vähe andmeid",
+      "peakLabel": "aktiivseim aeg",
+      "showAllStats": "Vaata kogu statistikat",
+      "hideAllStats": "Peida lisastatistika",
+      "weekdayShort": {
+        "monday": "E",
+        "tuesday": "T",
+        "wednesday": "K",
+        "thursday": "N",
+        "friday": "R",
+        "saturday": "L",
+        "sunday": "P"
+      }
+    },
+
+    "rating": {
+      "title": "Raja hinnang",
+      "overall": "Üldhinnang",
+      "maintenance": "Hooldus",
+      "teeArea": "Teepadade seisukord",
+      "experience": "Mängukogemus",
+      "submit": "Salvesta",
+      "update": "Uuenda",
+      "loading": "Laadin…",
+      "noRatings": "Hinnanguid pole veel.",
+      "checkInRequired": "Hinnangu muutmiseks pead olema rajal hiljuti aktiivne.",
+      "saved": "Salvestatud!",
+      "error": "Salvestamine ebaõnnestus.",
+      "count": "hinnangut",
+      "average": "Keskmine",
+      "activeReports": "{count, plural, =0 {Aktiivseid teateid pole} =1 {# aktiivne teade} other {# aktiivset teadet}}",
+      "latestReports": "Viimased probleemid",
+      "report": "Teade",
+      "showLess": "Näita vähem",
+      "showAll": "Näita kõiki ({count})",
+      "close": "Sulge",
+      "editRating": "Muuda hinnangut",
+      "rateCourse": "Anna rajale hinnang",
+      "ratingInstructions": "Hinda iga kategooriat skaalal 1–5.",
+      "starLabel": "{value} / 5 tärni"
+    }
   },
   "checkin": {
     "checkingIn": "Registreerin rajale...",
@@ -117,7 +186,19 @@
     "submit": "Saada",
     "cancel": "Tühista",
     "success": "Aitäh! Teade on saadetud.",
-    "error": "Viga saatmisel"
+    "error": "Viga saatmisel",
+    "typeLabel": "Probleemi täpsustus",
+    "types": {
+      "broken_basket": "Korv katki",
+      "course_maintenance": "Rada hooldamata",
+      "tee_area": "Tiiala probleem",
+      "signage": "Silt või infotahvel katki",
+      "obstacle": "Takistus rajal",
+      "litter": "Prügi või prügikast",
+      "other_course": "Muu rajaprobleem",
+      "app_bug": "Rakenduse viga",
+      "other": "Muu probleem"
+    }
   },
   "admin": {
     "title": "Halduspaneel",
@@ -247,7 +328,72 @@
     "setNewPassword": "Määra uus parool",
     "resetPasswordDone": "Parool on muudetud. Nüüd saad sellega sisse logida.",
     "resetLinkInvalid": "See lähtestamise link on vigane või aegunud.",
-    "requestNewLink": "Küsi uus link"
+    "requestNewLink": "Küsi uus link",
+    "issueInProgress": "Töös",
+    "issueChangeStatus": "Muuda olekut",
+    "issueFilterStatus": "Olek",
+    "issueFilterType": "Probleemi tüüp",
+    "issueFilterCourse": "Rada",
+    "issueFilterAll": "Kõik",
+    "issueFilterResults": "Leitud teateid: {count}",
+    "noFilteredIssues": "Valitud filtritega teateid ei leitud.",
+    "issueNoCourse": "Rada pole määratud",
+    "issueTypeUnassigned": "Määramata",
+    "issueType_broken_basket": "Korv katki",
+    "issueType_course_maintenance": "Rada hooldamata",
+    "issueType_tee_area": "Tiiala probleem",
+    "issueType_signage": "Silt või infotahvel katki",
+    "issueType_obstacle": "Takistus rajal",
+    "issueType_litter": "Prügi või prügikast",
+    "issueType_other_course": "Muu rajaprobleem",
+    "issueType_app_bug": "Rakenduse viga",
+    "issueType_other": "Muu probleem",
+
+    "courseNotices": {
+      "manageButton": "Teated",
+      "title": "Raja teated",
+      "close": "Sulge",
+      "addNotice": "Lisa uus teade",
+      "editNotice": "Muuda teadet",
+      "type": "Teate tüüp",
+      "types": {
+        "info": "Info",
+        "event": "Üritus",
+        "maintenance": "Hooldustöö",
+        "closed": "Rada suletud"
+      },
+      "titleEt": "Pealkiri eesti keeles",
+      "titleEn": "Pealkiri inglise keeles",
+      "messageEt": "Sõnum eesti keeles",
+      "messageEn": "Sõnum inglise keeles",
+      "startsAt": "Näitamise algus",
+      "endsAt": "Näitamise lõpp",
+      "active": "Teade on aktiivne",
+      "saving": "Salvestan...",
+      "saveChanges": "Salvesta muudatused",
+      "cancel": "Tühista muutmine",
+      "existingNotices": "Olemasolevad teated",
+      "loading": "Laen teateid...",
+      "noNotices": "Sellel rajal pole veel teateid.",
+      "activeStatus": "Aktiivne",
+      "inactiveStatus": "Mitteaktiivne",
+      "edit": "Muuda",
+      "delete": "Kustuta",
+      "confirmDelete": "Kas kustutada teade \"{title}\"?",
+      "loadError": "Teadete laadimine ebaõnnestus.",
+      "saveError": "Teate salvestamine ebaõnnestus.",
+      "deleteError": "Teate kustutamine ebaõnnestus.",
+      "dateError": "Lõpuaeg ei saa olla algusajast varasem."
+    }
+  },
+  "courseNotices": {
+    "heading": "Raja teated",
+    "types": {
+      "info": "Info",
+      "event": "Üritus",
+      "maintenance": "Hooldustöö",
+      "closed": "Rada suletud"
+    }
   },
   "common": {
     "loading": "Laadin...",
@@ -255,6 +401,34 @@
     "cancel": "Tühista",
     "close": "Sulge",
     "back": "Tagasi"
+  },
+  "faq": {
+    "title": "Korduma kippuvad küsimused",
+    "intro": "Siit leiad vastused Disc Golf Trackeri kasutamise, radade, andmete ja privaatsuse kohta.",
+    "coursesTitle": "Rajad",
+    "coursesMissingQ": "Miks kõiki discgolfi radu rakenduses pole?",
+    "coursesMissingA": "Rakenduses kuvatakse praegu lisatud rajad. Radade nimekiri täieneb järk-järgult. Kui sinu kodurada puudub, anna meile sellest teada.",
+    "coursesAddQ": "Kuidas saab uut rada lisada?",
+    "coursesAddA": "Uusi radu lisavad rakenduse haldajad. Puuduva raja kohta saad meile saata teate aadressile info@digiarendus.ee.",
+    "dataTitle": "Andmed ja privaatsus",
+    "dataTrackedQ": "Milliseid andmeid rakendus jälgib?",
+    "dataTrackedA": "Rakendus salvestab raja külastuse registreerimisel raja, kellaaja, grupi suuruse ja anonüümse seadme ID. Nende andmete abil näidatakse reaalajas rajal olevate mängijate arvu ja arvutatakse koondstatistikat.",
+    "locationQ": "Kas rakendus jälgib minu asukohta?",
+    "locationA": "Rakendus ei salvesta sinu GPS-teekonda. Külastus seotakse sinu valitud rajaga. Kaarditeenuse pakkuja OpenStreetMap võib kaardi laadimisel näha sinu IP-aadressi.",
+    "deviceIdQ": "Mis on anonüümne seadme ID?",
+    "deviceIdA": "See on juhuslik tunnus, mis salvestatakse sinu brauserisse siis, kui registreerid end rajale. Seda kasutatakse külastuste sidumiseks sama seadmega, mitte sinu nime või kontaktandmetega.",
+    "checkinTitle": "Raja külastamine",
+    "checkinQ": "Kuidas raja külastuse registreerimine töötab?",
+    "checkinA": "Ava raja leht ja vajuta registreerimise nuppu. Külastuse ajal uuendatakse aktiivsust ning rakendus saab näidata, kui palju mängijaid rajal viibib.",
+    "checkinDataQ": "Kas minu külastus on teistele nähtav?",
+    "checkinDataA": "Teised kasutajad näevad rajal olevate mängijate koondarvu, mitte sinu nime ega isiklikke kontaktandmeid.",
+    "ratingsTitle": "Hinnangud ja probleemidest teatamine",
+    "ratingQ": "Kuidas saab rajale hinnangut anda?",
+    "ratingA": "Hinnangu andmiseks peab sinu seade olema sellel rajal hiljuti aktiivne. Hinnata saab üldist kogemust, hooldust ja tiialade seisukorda. Hinnangut saab muuta kuni kolm päeva pärast viimast aktiivsust rajal.",
+    "issueQ": "Kuidas teatada raja probleemidest?",
+    "issueA": "Kasuta raja lehel nuppu „Teata probleemist“. Vali probleemi tüüp ja lisa võimalikult täpne kirjeldus. Teade jõuab raja haldajateni ülevaatamiseks.",
+    "conditionQ": "Kes määrab raja ametliku seisukorra?",
+    "conditionA": "Raja ametliku seisukorra määrab raja haldaja või rakenduse peakasutaja. Külastajate antud hinnangud on sellest eraldi."
   },
   "privacy": {
     "title": "Privaatsuspoliitika",

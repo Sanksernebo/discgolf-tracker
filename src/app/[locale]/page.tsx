@@ -5,6 +5,7 @@ import { EstoniaMap } from "@/components/map/EstoniaMap";
 import { ActiveCheckInBanner } from "@/components/ActiveCheckInBanner";
 import { TrafficLegend } from "@/components/map/TrafficLegend";
 import { ESTONIAN_COUNTIES } from "@/lib/constants";
+import { CourseSearch } from "@/components/map/CourseSearch";
 
 export const dynamic = "force-dynamic";
 
@@ -53,6 +54,7 @@ export default async function HomePage({
         <p className="text-sm text-neutral-500">{t("app.tagline")}</p>
       </div>
       <ActiveCheckInBanner locale={locale} />
+      <CourseSearch courses={coursesForMap} />
       <EstoniaMap courses={coursesForMap} locale={locale} />
       <TrafficLegend />
     </div>

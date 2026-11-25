@@ -14,6 +14,7 @@ export type CourseWithHoles = {
   longitude: number;
   descriptionEt: string | null;
   descriptionEn: string | null;
+  imageUrl?: string | null;
   holes: { number: number; par: number; distance: number | null }[];
   admins?: { adminId: string }[];
 };
@@ -31,6 +32,7 @@ const empty: Draft = {
   longitude: 24.75,
   descriptionEt: "",
   descriptionEn: "",
+  imageUrl: null,
   holes: [{ number: 1, par: 3, distance: null }],
 };
 
@@ -46,6 +48,7 @@ export function CourseEditor({
   onSaved: () => void;
 }) {
   const t = useTranslations("admin");
+
   const [draft, setDraft] = useState<Draft>(
     initial
       ? {
@@ -57,6 +60,7 @@ export function CourseEditor({
           longitude: initial.longitude,
           descriptionEt: initial.descriptionEt ?? "",
           descriptionEn: initial.descriptionEn ?? "",
+          imageUrl: initial.imageUrl ?? null,
           holes: initial.holes.length
             ? initial.holes.map((h) => ({
                 number: h.number,
@@ -67,15 +71,21 @@ export function CourseEditor({
         }
       : empty,
   );
+
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [assignedAdminIds, setAssignedAdminIds] = useState<string[]>(
     initial?.admins?.map((a) => a.adminId) ?? [],
   );
   const [adminOptions, setAdminOptions] = useState<AdminOption[]>([]);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imageBusy, setImageBusy] = useState(false);
+  const [imageMessage, setImageMessage] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
 
   useEffect(() => {
     if (!canEditAssignments) return;
+
     fetch("/api/admin/admins")
       .then((r) => (r.ok ? r.json() : { admins: [] }))
       .then((data) => {
@@ -84,8 +94,21 @@ export function CourseEditor({
             (a) => a.role === "courseAdmin",
           ),
         );
-      });
+      })
+      .catch(() => setAdminOptions([]));
   }, [canEditAssignments]);
+
+  useEffect(() => {
+    if (!imageFile) {
+      setImagePreview(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(imageFile);
+    setImagePreview(previewUrl);
+
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [imageFile]);
 
   function update<K extends keyof Draft>(key: K, value: Draft[K]) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -100,19 +123,13 @@ export function CourseEditor({
 
   function addHole() {
     setDraft((d) => {
-      // Use max(existing) + 1 rather than length + 1 so deleting a hole
-      // from the middle and adding a new one doesn't collide with an
-      // existing number (which would fail the (courseId, number) unique
-      // constraint on save).
       const nextNumber = d.holes.length
         ? Math.max(...d.holes.map((h) => h.number)) + 1
         : 1;
+
       return {
         ...d,
-        holes: [
-          ...d.holes,
-          { number: nextNumber, par: 3, distance: null },
-        ],
+        holes: [...d.holes, { number: nextNumber, par: 3, distance: null }],
       };
     });
   }
@@ -124,9 +141,10 @@ export function CourseEditor({
     }));
   }
 
-  async function save() {
+  async function save(): Promise<string | null> {
     setBusy(true);
     setError(null);
+
     try {
       const body: Record<string, unknown> = {
         ...draft,
@@ -142,23 +160,93 @@ export function CourseEditor({
               : Number(h.distance),
         })),
       };
-      if (canEditAssignments) body.assignedAdminIds = assignedAdminIds;
+
+      if (canEditAssignments) {
+        body.assignedAdminIds = assignedAdminIds;
+      }
+
       const url = initial
         ? `/api/admin/courses/${initial.id}`
         : "/api/admin/courses";
+
       const res = await fetch(url, {
         method: initial ? "PUT" : "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(body),
       });
+
       if (!res.ok) {
         const j = await res.json().catch(() => ({}));
         setError(JSON.stringify(j.details ?? j.error ?? "error"));
-        return;
+        return null;
       }
-      onSaved();
+
+      const data = await res.json().catch(() => ({}));
+
+      return initial?.id ?? data.course?.id ?? data.id ?? null;
+    } catch {
+      setError("Raja salvestamine ebaõnnestus.");
+      return null;
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function uploadCourseImage() {
+    setImageMessage("");
+
+    if (!imageFile) {
+      setImageMessage("Vali enne pilt.");
+      return;
+    }
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(imageFile.type)) {
+      setImageMessage("Palun vali JPG-, PNG- või WebP-pilt.");
+      return;
+    }
+
+    if (imageFile.size === 0 || imageFile.size > 5 * 1024 * 1024) {
+      setImageMessage("Pildi suurus peab olema kuni 5 MB.");
+      return;
+    }
+
+    setImageBusy(true);
+
+    try {
+      // Kui rada on uus, salvesta see kõigepealt.
+      let courseId = initial?.id ?? null;
+
+      if (!courseId) {
+        courseId = await save();
+        if (!courseId) return;
+      }
+
+      const formData = new FormData();
+      formData.append("image", imageFile);
+
+      const response = await fetch(`/api/admin/courses/${courseId}/image`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json().catch(() => ({}));
+
+      if (!response.ok) {
+        throw new Error(data.error || "Pildi üleslaadimine ebaõnnestus.");
+      }
+
+      setDraft((d) => ({ ...d, imageUrl: data.imageUrl }));
+      setImageFile(null);
+      setImageMessage("Raja pilt laaditi edukalt üles.");
+
+      // Värskenda administraatori vaadet.
+      onSaved();
+    } catch (err) {
+      setImageMessage(
+        err instanceof Error ? err.message : "Pildi üleslaadimine ebaõnnestus.",
+      );
+    } finally {
+      setImageBusy(false);
     }
   }
 
@@ -178,6 +266,7 @@ export function CourseEditor({
           <h2 id="course-editor-title" className="text-lg font-semibold">
             {initial ? t("editCourse") : t("addCourse")}
           </h2>
+
           <button
             type="button"
             onClick={onClose}
@@ -196,6 +285,7 @@ export function CourseEditor({
               className={inputCls}
             />
           </Field>
+
           <Field label={t("nameEn")}>
             <input
               value={draft.nameEn}
@@ -203,6 +293,7 @@ export function CourseEditor({
               className={inputCls}
             />
           </Field>
+
           <Field label={t("county")}>
             <select
               value={draft.county}
@@ -216,6 +307,7 @@ export function CourseEditor({
               ))}
             </select>
           </Field>
+
           <Field label={t("city")}>
             <input
               value={draft.city ?? ""}
@@ -223,6 +315,7 @@ export function CourseEditor({
               className={inputCls}
             />
           </Field>
+
           <Field label={t("latitude")}>
             <input
               type="number"
@@ -232,6 +325,7 @@ export function CourseEditor({
               className={inputCls}
             />
           </Field>
+
           <Field label={t("longitude")}>
             <input
               type="number"
@@ -241,6 +335,7 @@ export function CourseEditor({
               className={inputCls}
             />
           </Field>
+
           <Field label={t("descriptionEt")}>
             <textarea
               rows={2}
@@ -249,6 +344,7 @@ export function CourseEditor({
               className={inputCls}
             />
           </Field>
+
           <Field label={t("descriptionEn")}>
             <textarea
               rows={2}
@@ -259,11 +355,72 @@ export function CourseEditor({
           </Field>
         </div>
 
+        {/* Raja üldpildi üleslaadimine */}
+        <section className="flex flex-col gap-3 rounded-xl border border-neutral-200 dark:border-neutral-800 p-4">
+          <h3 className="font-semibold">Raja üldpilt</h3>
+
+          {(imagePreview || draft.imageUrl) && (
+            <img
+              src={imagePreview || draft.imageUrl || ""}
+              alt="Raja üldpildi eelvaade"
+              className="max-h-72 w-full rounded-lg border border-neutral-200 dark:border-neutral-700 object-contain"
+            />
+          )}
+
+          <p className="text-sm text-neutral-500">
+            Vali pilt, millel on näha kogu discgolfirada. Lubatud formaadid:
+            JPG, PNG ja WebP. Maksimaalne suurus 5 MB.
+          </p>
+
+          <input
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={(e) => {
+              setImageFile(e.target.files?.[0] ?? null);
+              setImageMessage("");
+            }}
+            disabled={imageBusy || busy}
+            className="block w-full text-sm"
+          />
+
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={uploadCourseImage}
+              disabled={!imageFile || imageBusy || busy}
+              className="rounded-lg bg-emerald-600 px-4 py-2 text-sm text-white hover:bg-emerald-700 disabled:opacity-50"
+            >
+              {imageBusy ? "Laadin pilti..." : "Salvesta raja pilt"}
+            </button>
+
+            {imageFile && (
+              <button
+                type="button"
+                onClick={() => {
+                  setImageFile(null);
+                  setImageMessage("");
+                }}
+                disabled={imageBusy}
+                className="rounded-lg border border-neutral-300 px-4 py-2 text-sm dark:border-neutral-700"
+              >
+                Tühista pildi valik
+              </button>
+            )}
+          </div>
+
+          {imageMessage && (
+            <p role="status" className="text-sm" aria-live="polite">
+              {imageMessage}
+            </p>
+          )}
+        </section>
+
         {canEditAssignments && (
           <fieldset className="flex flex-col gap-2">
             <legend className="text-xs uppercase text-neutral-500">
               {t("assignedCourses")}
             </legend>
+
             {adminOptions.length === 0 ? (
               <div className="text-sm text-neutral-500">{t("noUsers")}</div>
             ) : (
@@ -298,6 +455,7 @@ export function CourseEditor({
             <div className="text-xs uppercase text-neutral-500">
               {t("holes")}
             </div>
+
             <button
               type="button"
               onClick={addHole}
@@ -306,12 +464,14 @@ export function CourseEditor({
               + {t("addHole")}
             </button>
           </div>
+
           <div className="grid grid-cols-[3rem_1fr_1fr_2rem] gap-2 text-xs text-neutral-500 uppercase">
             <div>{t("holeNumber")}</div>
             <div>{t("par")}</div>
             <div>{t("distance")}</div>
             <div></div>
           </div>
+
           {draft.holes.map((h, i) => (
             <div
               key={i}
@@ -326,6 +486,7 @@ export function CourseEditor({
                 className={inputCls}
                 min={1}
               />
+
               <input
                 type="number"
                 value={h.par}
@@ -334,6 +495,7 @@ export function CourseEditor({
                 min={1}
                 max={10}
               />
+
               <input
                 type="number"
                 value={h.distance ?? ""}
@@ -346,6 +508,7 @@ export function CourseEditor({
                 className={inputCls}
                 min={0}
               />
+
               <button
                 type="button"
                 onClick={() => removeHole(i)}
@@ -368,10 +531,14 @@ export function CourseEditor({
           >
             {t("cancel")}
           </button>
+
           <button
             type="button"
-            onClick={save}
-            disabled={busy || !draft.nameEt || !draft.nameEn}
+            onClick={async () => {
+              const courseId = await save();
+              if (courseId) onSaved();
+            }}
+            disabled={busy || imageBusy || !draft.nameEt || !draft.nameEn}
             className="px-4 py-2 text-sm rounded-full bg-emerald-500 text-white hover:bg-emerald-600 transition disabled:opacity-50"
           >
             {t("save")}
